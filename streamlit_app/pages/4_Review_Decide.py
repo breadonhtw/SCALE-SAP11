@@ -91,12 +91,17 @@ else:
              + (f" · completed {workflow['completed_at']}"
                 if workflow.get("completed_at") else ""))
     if workflow.get("is_fallback"):
-        st.warning("Local review-state machine (fallback) — live SAP Build "
-                   "Process Automation wiring arrives in B5. Honest label per "
+        st.warning("Local review-state machine (fallback) — not a live "
+                   "SAP Build Process Automation instance. Honest label per "
                    "CLAUDE.md §18.", icon="⚠️")
     else:
         st.success(f"Live SAP Build Process Automation instance "
-                   f"`{workflow.get('external_instance_id')}`.")
+                   f"`{workflow.get('external_instance_id')}` — the approval "
+                   "task appears in the reviewer's My Inbox (SAP Build lobby).")
+        if st.button("Sync status from SAP Build"):
+            synced = api_client.sync_workflow(case_id)
+            st.caption(f"SBPA instance status: {synced.get('sbpa_status')}")
+            st.rerun()
 
 # -- 3. decision --------------------------------------------------------------
 

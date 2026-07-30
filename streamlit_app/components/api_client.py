@@ -125,6 +125,10 @@ def start_review_workflow(case_id: str, draft_id: str | None = None,
                  idempotent=True)
 
 
+def sync_workflow(case_id: str) -> dict:
+    return _post(f"/cases/{case_id}/review-workflows/sync")
+
+
 def transition_workflow(case_id: str, status: str,
                         external_instance_id: str | None = None) -> dict:
     body: dict = {"status": status}

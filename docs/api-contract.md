@@ -180,6 +180,16 @@ that proves a live SBPA instance actually ran, so B5's integration must pass
 the real SBPA instance ID here, not a placeholder.
 `{"backend", "workflow": WorkflowInstance}`.
 
+### `POST /cases/{case_id}/review-workflows/sync` — **Track B (B5)**
+Polls the live SBPA instance (localhost cannot receive the destination
+callback) and applies its status/outcome to the local workflow record via the
+same transition semantics as PATCH (WORKFLOW_TRANSITIONED audit event, raw
+SBPA context recorded in the event details). `422 NO_EXTERNAL_INSTANCE` when
+the workflow runs on the local fallback; `502 SBPA_UNAVAILABLE` when SAP
+Build cannot be queried. A COMPLETED instance with an unrecognisable outcome
+maps to IN_REVIEW (never guessed APPROVED).
+`{"backend", "workflow": WorkflowInstance, "sbpa_status": "<raw SBPA status>"}`.
+
 `WorkflowInstance`:
 ```json
 {"workflow_id": "...", "case_id": "...", "external_instance_id": "SBPA-INST-1", "status": "APPROVED", "started_at": "...", "completed_at": "...", "is_fallback": false}

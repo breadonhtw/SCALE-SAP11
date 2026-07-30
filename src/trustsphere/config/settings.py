@@ -19,6 +19,7 @@ _SECRET_FIELDS = {
     "hana_password",
     "sap_ai_core_client_secret",
     "sap_build_client_secret",
+    "sap_build_api_key",
     "audit_hashing_key",
 }
 
@@ -68,6 +69,11 @@ class Settings(BaseSettings):
     sap_build_client_id: str = ""
     sap_build_client_secret: str = ""
     sap_build_token_url: str = ""
+    # B5: path to the gitignored BTP service-key JSON, the environment
+    # API key, and the exact trigger URL from Control Tower -> Triggers -> View
+    sbpa_service_key: str = ""
+    sap_build_api_key: str = ""
+    sap_build_trigger_url: str = ""
 
     audit_hashing_key: str = ""
     case_data_region: str = "APJ"

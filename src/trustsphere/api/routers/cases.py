@@ -28,6 +28,7 @@ from trustsphere.retrieval.hybrid import assemble_case_file
 from trustsphere.scoring.policy import ScoringPolicy
 from trustsphere.services.audit import record_event
 from trustsphere.services.idempotency import check_idempotency, compute_request_hash
+from trustsphere.workflows.sbpa import SBPAClient, SBPAError, map_outcome
 
 router = APIRouter(tags=["cases"])
 
@@ -244,12 +245,30 @@ def start_review_workflow(
     if repo.get_case(case_id) is None:
         raise NotFoundError(f"case_id {case_id!r} not found")
 
+    # Live SBPA trigger (B5): attempted when configured; any failure keeps
+    # the honest local fallback rather than failing the request (§18).
+    external_instance_id: str | None = None
+    sbpa_note: str | None = None
     settings = get_settings()
-    is_fallback = settings.workflow_backend != "sap_build" or not settings.sap_build_api_base_url
+    if SBPAClient.configured(settings):
+        try:
+            client = SBPAClient.from_settings(settings)
+            instance = client.start_instance({
+                "case_id": case_id,
+                "draft_id": body.draft_id or "",
+                "evidence_summary": f"Case {case_id} (alert "
+                                     f"{case.get('ALERT_ID')}) awaiting human "
+                                     "review in TrustSphere RiskOps Copilot.",
+            })
+            external_instance_id = str(instance.get("id") or "") or None
+        except SBPAError as exc:
+            sbpa_note = str(exc)
+
+    is_fallback = external_instance_id is None
     workflow = WorkflowInstance(
         workflow_id=str(uuid.uuid4()),
         case_id=case_id,
-        external_instance_id=None,
+        external_instance_id=external_instance_id,
         status=WorkflowStatus.SENIOR_REVIEW if body.senior_review else WorkflowStatus.PENDING,
         started_at=datetime.now(timezone.utc),
         completed_at=None,
@@ -259,12 +278,73 @@ def start_review_workflow(
     record_event(
         repo, case_id=case_id, event_type=AuditEventType.WORKFLOW_STARTED, actor_type=ActorType.SYSTEM,
         actor_id="review_workflow_starter", object_type="WORKFLOW_INSTANCE", object_id=workflow.workflow_id,
-        details={"draft_id": body.draft_id, "senior_review": body.senior_review, "is_fallback": is_fallback},
+        details={"draft_id": body.draft_id, "senior_review": body.senior_review,
+                 "is_fallback": is_fallback,
+                 "sbpa_instance_id": external_instance_id,
+                 **({"sbpa_error": sbpa_note} if sbpa_note else {})},
     )
     response = {"backend": repo.backend_label(), "workflow": workflow.model_dump()}
     if idempotency_key:
         repo.store_idempotent_response(idempotency_key, endpoint, req_hash, response)
     return response
+
+
+@router.post("/cases/{case_id}/review-workflows/sync")
+def sync_review_workflow(case_id: str, repo: Repository = Depends(get_repo)):
+    """Poll the live SBPA instance and apply its status/outcome to the local
+    workflow record (localhost cannot receive the SBPA callback, so the
+    cockpit pulls). No-op guarded: requires a live external instance.
+    """
+    if repo.get_case(case_id) is None:
+        raise NotFoundError(f"case_id {case_id!r} not found")
+    current = repo.get_latest_workflow_instance(case_id)
+    if current is None:
+        raise NotFoundError(f"no review workflow started for case_id {case_id!r}")
+    if not current.external_instance_id:
+        raise AppError("NO_EXTERNAL_INSTANCE",
+                       "This workflow runs on the local fallback — there is "
+                       "no SAP Build instance to sync.", status_code=422)
+
+    try:
+        client = SBPAClient.from_settings(get_settings())
+        instance = client.get_instance(current.external_instance_id)
+        sbpa_status = str(instance.get("status", ""))
+        context = None
+        if sbpa_status.upper() == "COMPLETED":
+            try:
+                context = client.get_instance_context(current.external_instance_id)
+            except SBPAError:
+                context = None
+    except SBPAError as exc:
+        raise AppError("SBPA_UNAVAILABLE", f"SAP Build query failed: {exc}",
+                       status_code=502)
+
+    new_status = WorkflowStatus(map_outcome(sbpa_status, context))
+    if new_status == current.status:
+        return {"backend": repo.backend_label(),
+                "workflow": current.model_dump(), "sbpa_status": sbpa_status}
+
+    is_terminal = new_status in (WorkflowStatus.APPROVED, WorkflowStatus.RETURNED)
+    updated = WorkflowInstance(
+        workflow_id=current.workflow_id,
+        case_id=case_id,
+        external_instance_id=current.external_instance_id,
+        status=new_status,
+        started_at=current.started_at,
+        completed_at=datetime.now(timezone.utc) if is_terminal else current.completed_at,
+        is_fallback=False,
+    )
+    repo.save_workflow_instance(updated)
+    record_event(
+        repo, case_id=case_id, event_type=AuditEventType.WORKFLOW_TRANSITIONED,
+        actor_type=ActorType.SYSTEM, actor_id="sbpa_sync",
+        object_type="WORKFLOW_INSTANCE", object_id=updated.workflow_id,
+        details={"from": current.status.value, "to": new_status.value,
+                 "sbpa_status": sbpa_status,
+                 "sbpa_context": context if context else None},
+    )
+    return {"backend": repo.backend_label(), "workflow": updated.model_dump(),
+            "sbpa_status": sbpa_status}
 
 
 @router.patch("/cases/{case_id}/review-workflows")

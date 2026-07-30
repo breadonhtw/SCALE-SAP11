@@ -101,7 +101,7 @@ if draft:
                f"`{draft.get('MODEL_VERSION', '—')}` · prompt "
                f"`{draft.get('PROMPT_VERSION', '—')}` · status "
                f"{draft.get('VERIFICATION_STATUS', 'unverified')} · "
-               f"{draft.get('CREATED_AT', '')}")
+               f"{ui.fmt_ts(draft.get('CREATED_AT'))}")
     st.text(draft["CONTENT"])
 
 st.divider()

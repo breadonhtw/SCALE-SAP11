@@ -44,7 +44,7 @@ left, right = st.columns((3, 2))
 with left:
     st.subheader(f"Regulatory urgency {score['urgency_score']:.1f} / 100")
     st.caption(f"Deterministic, versioned policy `{score['policy_version']}` · "
-               f"calculated {score['calculated_at']} UTC")
+               f"calculated {ui.fmt_ts(score['calculated_at'])}")
     ui.table(
         [{"Factor": f["factor_code"].replace("_", " ").title(),
           "Raw value": str(f.get("raw_value")),
@@ -59,7 +59,7 @@ with left:
 with right:
     st.subheader("SLA")
     st.metric("Time remaining", ui.sla_text(alert.get("sla_due_at")),
-              help=f"Due {alert.get('sla_due_at')} UTC")
+              help=f"Due {ui.fmt_ts(alert.get('sla_due_at'))}")
 
     st.subheader("Operational advisory")
     if prediction is None:

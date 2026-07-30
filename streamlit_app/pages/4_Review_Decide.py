@@ -63,7 +63,7 @@ else:
                f"**{draft['CREATED_BY_TYPE']}** · model "
                f"`{draft.get('MODEL_VERSION', '—')}` · prompt "
                f"`{draft.get('PROMPT_VERSION', '—')}` · "
-               f"{draft.get('CREATED_AT', '')}")
+               f"{ui.fmt_ts(draft.get('CREATED_AT'))}")
     edited = st.text_area("Investigator revision", value=draft["CONTENT"],
                           height=320, label_visibility="collapsed")
     if st.button("Save investigator revision"):
@@ -87,8 +87,8 @@ if workflow is None:
         st.caption("A draft is required before review can start.")
 else:
     st.write(f"Workflow `{workflow['workflow_id']}` · status "
-             f"**{workflow['status']}** · started {workflow['started_at']}"
-             + (f" · completed {workflow['completed_at']}"
+             f"**{workflow['status']}** · started {ui.fmt_ts(workflow['started_at'])}"
+             + (f" · completed {ui.fmt_ts(workflow['completed_at'])}"
                 if workflow.get("completed_at") else ""))
     if workflow.get("is_fallback"):
         st.warning("Local review-state machine (fallback) — not a live "
@@ -108,7 +108,7 @@ else:
 st.header("3 · Decision (human only)")
 if decisions:
     st.caption("Decision history:")
-    ui.table([{"When (UTC)": d["decided_at"], "Decision": d["decision_type"],
+    ui.table([{"When (SGT)": ui.fmt_ts(d["decided_at"]), "Decision": d["decision_type"],
                "By": d["decided_by"], "Attested": d["attested"],
                "Rationale": d["rationale"]} for d in decisions])
 

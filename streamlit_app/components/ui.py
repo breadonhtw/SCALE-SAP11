@@ -3,8 +3,30 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 import streamlit as st
+
+# Storage/API/audit stay UTC; only rendering converts (CLAUDE.md §7/§23).
+DISPLAY_TZ = ZoneInfo("Asia/Singapore")
+
+
+def _parse_ts(value) -> datetime | None:
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+
+
+def fmt_ts(value) -> str:
+    """Render a UTC timestamp in the display timezone: '31 Jul 2026, 07:14 SGT'."""
+    dt = _parse_ts(value)
+    if dt is None:
+        return "—" if not value else str(value)
+    return dt.astimezone(DISPLAY_TZ).strftime("%d %b %Y, %H:%M SGT")
 
 TIER_BADGE = {
     "CRITICAL": ":red-badge[CRITICAL]",
@@ -72,7 +94,7 @@ def audit_table(events: list[dict]) -> None:
     if not events:
         st.caption("No audit events yet.")
         return
-    table([{"When (UTC)": e["occurred_at"], "Event": e["event_type"],
+    table([{"When (SGT)": fmt_ts(e["occurred_at"]), "Event": e["event_type"],
             "Actor": f"{e['actor_type']}:{e['actor_id']}",
             "Object": f"{e['object_type']}:{e['object_id']}",
             "Correlation": e["correlation_id"]}

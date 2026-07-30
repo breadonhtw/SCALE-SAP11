@@ -25,6 +25,76 @@ This section records what the team-11 tenant actually provides (proof: `scripts/
 
 **Data reality:** the tenant ships a provisioned dataset (150k transactions, 5k companies, 12.5k beneficial owners, 5k risk alerts, 500 compliance cases, sanctions/screening/country reference tables). It was profiled and cleaned into `TEAM_11_USER` (`scripts/clean_data.py`, findings in `docs/data-quality-report.md`). References below to seeding synthetic data are superseded — build against the cleaned snapshot. Key cleaning facts: use `RISK_ALERTS.SLA_BREACHED_DERIVED` (not the source flag) as any SLA label; 99.4% of closed alerts breached SLA, so the predictive layer targets remaining-margin/time-to-breach, not breach classification; `COMPANIES.KYC_EFFECTIVE_STATUS` is the trustworthy KYC field; `LEGAL_NAME` is not unique — key on `REGISTRATION_NUMBER`/`LEI_CODE`; 25 alerts carry `ALERT_DQ_FLAG='RESOLVED_BEFORE_CREATED'` and are excluded from duration training.
 
+## 0.1 Build status addendum (verified 2026-07-31)
+
+Where this section conflicts with the plans below, this section records what
+was actually built and verified. Proof lives in `docs/capability-matrix.md`
+(live-call evidence) and the git history on `track-b/b1-cockpit`.
+
+**Delivered and live (all against the real tenant):**
+
+- **Track A backend merged** (`src/trustsphere/`): FastAPI service, HANA +
+  local-SQLite repositories, deterministic scoring engine, HybridRAG
+  assembly, heuristic SLA advisory. Contract frozen in
+  `docs/api-contract.md` (with Track B addendums: `/explanations`,
+  `/review-workflows/sync`).
+- **HANA Cloud is the live system of record**: app-state tables created via
+  `scripts/init_app_schema.py`; policy corpus embedded in-database
+  (`scripts/load_policy_corpus.py`, NEB `VECTOR_EMBEDDING` +
+  `COSINE_SIMILARITY` verified live); **all 1,554 open alerts scored**;
+  CaseFile assembly runs SQL + graph-derived owners + vector policy
+  retrieval on real data (~3s). `DATA_BACKEND=hana` in `.env`;
+  `/health` reports `hana_cloud:TEAM_11_USER`.
+- **Generation (B2)**: SAP AI Core orchestration v2 via the documented REST
+  API (`src/trustsphere/generation/`), model **`gpt-4.1-mini`**
+  (team-selected in AI Launchpad, live-verified), **content filtering
+  active** (Azure Content Safety + Llama Guard 3 8B, mirrored from the
+  team-authored portal export in `sap/orchestration/`; portal cannot save
+  orchestration configs in this tenant release — the exported JSON is the
+  governed artifact). Prompts versioned (`config/prompts/*-1.1.md`,
+  verbatim-dates rule); post-generation citation-coverage and
+  numeric-fidelity validation; recent live runs 100% coverage. Deterministic
+  fallback preserves the contract shape.
+- **Cockpit (B1/B3)**: paginated ranked queue (50/page over all 1,554),
+  alert detail with factor breakdown, CaseFile tabs, narrative page with
+  per-sentence citations + validation flags, Review & Decide with
+  server-enforced attestation (`422 ATTESTATION_REQUIRED`), decided-state
+  chips (case status `ESCALATED`/`RETURNED_FOR_EDIT`/`INFO_REQUESTED` —
+  the alert row itself is never closed by this prototype), append-only
+  audit views. Timestamps stored UTC, rendered SGT. Tables render as
+  markdown (pandas DLLs are blocked by the dev machine's Application
+  Control policy — also why the SDK is not used for generation).
+- **Investigation Assistant (B4)**: client-side tool-calling loop on
+  orchestration v2 (`src/trustsphere/assistant/`), five bounded tools over
+  the same API; refuses dismiss/file/block/decide; live-verified including
+  the shared-state proof (agent-created draft visible in the cockpit).
+- **SBPA (B5) — hybrid**: process "TrustSphere Human Review" is **live in
+  the SAP Build lobby** (SCALE 2026 environment; API trigger, approval
+  form, My Inbox task executed by the user). The **API-trigger path is
+  blocked** — no service-management rights in the shared subaccount, and
+  api-key-only auth was tested to exhaustion (all variants 401). Backend
+  trigger + polling `/sync` code (`src/trustsphere/workflows/sbpa.py`) is
+  implemented, unit-tested, and dormant: setting `SBPA_SERVICE_KEY`
+  activates it (trigger URL + definitionId already configured in `.env`).
+  The cockpit keeps the honest local-fallback label meanwhile.
+- **Tests**: 77 passing (scoring, review flow incl. attestation refusal,
+  generation validation, assistant loop guardrails, SBPA client).
+- Integration fixes applied to Track A code during HANA go-live (int→str
+  id coercion in `domain/*` via `coerce_numbers_to_str`; queue
+  LEFT JOIN for case status; `update_case_status`) — Person A should
+  review these diffs on merge.
+
+**Data reality notes:** entity ids in the tenant snapshot are INTEGERs;
+every open alert in the provisioned dataset is already past SLA (dates
+2024–2025), so the `IMMINENT_SLA_BREACH` override fires queue-wide — the
+dataset is the aged-backlog crisis, which the demo narrates as such.
+
+**Remaining before submission:** demo-state reset + smoke-test script,
+demo runbook (`docs/demo-script.md`), branch push + merge with Person A,
+timed dry runs. Governance note: app-state test artifacts in HANA may be
+wiped as disclosed dev hygiene before the demo; production audit rows are
+append-only.
+
 ## 1. Product definition
 
 ### One-line pitch

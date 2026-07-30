@@ -29,7 +29,7 @@ st.page_link("app.py", label="← Queue")
 st.page_link("pages/1_Alert_Detail.py", label="← Alert detail")
 st.title(f"Case file — {case_id}")
 st.caption(f"Alert `{cf['alert_details']['alert_id']}` · schema "
-           f"`{cf['schema_version']}` · assembled {cf['assembled_at']} UTC · "
+           f"`{cf['schema_version']}` · assembled {ui.fmt_ts(cf['assembled_at'])} · "
            f"source coverage {cf['source_coverage']:.0%} · region "
            f"{cf['region']} · backend `{state['backend']}`")
 
@@ -77,7 +77,7 @@ with tab_facts:
     st.subheader("Transaction timeline")
     if cf["transaction_timeline"]:
         ui.table(
-            [{"Occurred (UTC)": t.get("occurred_at") or "—",
+            [{"Occurred (SGT)": ui.fmt_ts(t.get("occurred_at")),
               "Transaction": t["transaction_id"],
               "Amount (USD)": (ui.money(str(t["amount_usd"]), "USD")
                                 if t.get("amount_usd") is not None else "—"),
@@ -139,13 +139,13 @@ with tab_prov:
         [{"Citation": c["citation_id"], "Type": c["source_type"],
           "Kind": c["evidence_kind"], "Source": c["source_id"],
           "Locator": f"`{c['source_locator']}`",
-          "Retrieved": c["retrieved_at"], "Region": c["region"],
+          "Retrieved": ui.fmt_ts(c["retrieved_at"]), "Region": c["region"],
           "Scope": c["permission_scope"]}
          for c in cf["source_provenance"]])
     st.subheader("Data freshness")
     ui.table(
-        [{"Source": f["source_object"], "Retrieved (UTC)": f["retrieved_at"],
-          "Source updated": f.get("source_updated_at") or "—"}
+        [{"Source": f["source_object"], "Retrieved (SGT)": ui.fmt_ts(f["retrieved_at"]),
+          "Source updated": ui.fmt_ts(f.get("source_updated_at"))}
          for f in cf["data_freshness"]])
 
 st.divider()

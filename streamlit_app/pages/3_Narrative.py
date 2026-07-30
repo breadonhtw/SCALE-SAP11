@@ -105,13 +105,8 @@ if draft:
     st.text(draft["CONTENT"])
 
 st.divider()
+if st.button("Review & decide →", type="primary"):
+    st.switch_page("pages/4_Review_Decide.py")
+
 with st.expander("Audit history"):
-    events = api_client.audit_events(case_id)["audit_events"]
-    if events:
-        ui.table([{"When (UTC)": e["occurred_at"], "Event": e["event_type"],
-                   "Actor": f"{e['actor_type']}:{e['actor_id']}",
-                   "Object": f"{e['object_type']}:{e['object_id']}",
-                   "Correlation": e["correlation_id"]}
-                  for e in events])
-    else:
-        st.caption("No audit events yet.")
+    ui.audit_table(api_client.audit_events(case_id)["audit_events"])

@@ -116,6 +116,25 @@ def latest_draft(case_id: str) -> dict:
     return _get(f"/cases/{case_id}/drafts/latest")
 
 
+# -- review workflow --------------------------------------------------------
+
+def start_review_workflow(case_id: str, draft_id: str | None = None,
+                          senior_review: bool = False) -> dict:
+    return _post(f"/cases/{case_id}/review-workflows",
+                 {"draft_id": draft_id, "senior_review": senior_review},
+                 idempotent=True)
+
+
+def transition_workflow(case_id: str, status: str,
+                        external_instance_id: str | None = None) -> dict:
+    body: dict = {"status": status}
+    if external_instance_id:
+        body["external_instance_id"] = external_instance_id
+    resp = requests.patch(f"{BASE_URL}/cases/{case_id}/review-workflows",
+                          json=body, timeout=TIMEOUT)
+    return _handle(resp)
+
+
 # -- decisions / audit ------------------------------------------------------
 
 def record_decision(case_id: str, decision_type: str, rationale: str,

@@ -58,6 +58,17 @@ def table(rows: list[dict]) -> None:
     st.markdown("\n".join(lines))
 
 
+def audit_table(events: list[dict]) -> None:
+    if not events:
+        st.caption("No audit events yet.")
+        return
+    table([{"When (UTC)": e["occurred_at"], "Event": e["event_type"],
+            "Actor": f"{e['actor_type']}:{e['actor_id']}",
+            "Object": f"{e['object_type']}:{e['object_id']}",
+            "Correlation": e["correlation_id"]}
+           for e in events])
+
+
 def money(amount: str, currency: str) -> str:
     # Amounts arrive as exact decimal strings; format for display only.
     whole, _, frac = amount.partition(".")

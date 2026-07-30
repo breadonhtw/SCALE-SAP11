@@ -1,0 +1,48 @@
+# SLA advisory model feature schema (CLAUDE.md §10).
+#
+# Target: NOT breach classification. RISK_ALERTS.SLA_BREACHED_DERIVED is
+# 99.4% TRUE on closed alerts (docs/data-quality-report.md finding #1) — a
+# binary classifier trained on that label would be a majority-class
+# constant, not a signal. Target is instead RESOLUTION_HOURS (regression),
+# from which a derived, clearly-labelled "sla_risk_score" (margin vs. the
+# SLA window) is computed for display. This is a demonstration of the
+# advisory pattern, not a validated production model — see CLAUDE.md §10
+# and §26 (never claim synthetic/small-sample accuracy generalises).
+
+feature_schema_version: "2026-07-30.1"
+
+target: "RESOLUTION_HOURS"
+target_kind: "regression"
+excluded_label: "SLA_BREACHED_DERIVED (class balance 99.4% -> not used as a training target)"
+
+training_filter:
+  # Matches scripts/clean_data.py cleaning rules.
+  status_in: ["CLOSED_TRUE", "CLOSED_FALSE"]
+  exclude_dq_flag: "RESOLVED_BEFORE_CREATED"
+  require_non_null: ["RESOLUTION_HOURS"]
+
+features:
+  - name: alert_priority_ordinal
+    source: "AlertFactorInputs.alert_priority (mapped CRITICAL=3..LOW=0)"
+  - name: composite_risk_score
+    source: "AlertFactorInputs.composite_risk_score"
+  - name: country_risk_score
+    source: "AlertFactorInputs.country_risk_score"
+  - name: is_cross_border
+    source: "AlertFactorInputs.is_cross_border"
+  - name: amount_usd_log
+    source: "log1p(AlertFactorInputs.amount_usd)"
+  - name: entity_count
+    source: "ComplexityInputs.entity_count"
+  - name: jurisdiction_count
+    source: "ComplexityInputs.jurisdiction_count"
+  - name: missing_kyc_count
+    source: "ComplexityInputs.missing_kyc_count"
+  - name: related_alert_count
+    source: "ComplexityInputs.related_alert_count"
+  - name: transaction_volume_band
+    source: "ComplexityInputs.transaction_volume_band"
+
+small_sample_warning_threshold: 200
+model_artifact_path: "data/models/sla_model.joblib"
+model_metadata_path: "data/models/sla_model_metadata.json"

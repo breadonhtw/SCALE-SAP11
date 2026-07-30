@@ -1,0 +1,156 @@
+-- TrustSphere app-state schema — SAP HANA Cloud, schema TEAM_11_USER.
+--
+-- Adds the application tables from CLAUDE.md §7 on top of the already
+-- materialised cleaned business snapshot (COMPANIES, RISK_ALERTS,
+-- TRANSACTIONS, TRANSACTION_BASELINES, COMPANY_RISK_PROFILES,
+-- COMPANY_BENEFICIAL_OWNERS, COMPLIANCE_CASES, CASE_ALERTS, COUNTRIES, ...)
+-- produced by scripts/clean_data.py. Run via scripts/init_app_schema.py,
+-- which is idempotent (checks SYS.TABLES before each CREATE, mirroring the
+-- drop_if_exists pattern already used in clean_data.py — except here we
+-- do NOT drop on rerun, since these tables hold live application state).
+--
+-- No hard FOREIGN KEY constraints against the cleaned snapshot tables:
+-- those are CTAS copies without declared PKs in all cases, and re-running
+-- clean_data.py drops/recreates them, which would break FK-bound app
+-- tables. Referential integrity to ALERT_ID / CASE_ID is enforced in
+-- application code (trustsphere.persistence.hana), not at the DB level.
+
+CREATE COLUMN TABLE TEAM_11_USER."CASES" (
+    CASE_ID        NVARCHAR(40)  PRIMARY KEY,
+    ALERT_ID       NVARCHAR(40)  NOT NULL,
+    ASSIGNED_TEAM  NVARCHAR(64),
+    STATUS         NVARCHAR(32)  NOT NULL DEFAULT 'OPEN',
+    CREATED_AT     TIMESTAMP     NOT NULL,
+    UPDATED_AT     TIMESTAMP     NOT NULL,
+    REGION         NVARCHAR(16)  NOT NULL,
+    UNIQUE (ALERT_ID)
+);
+
+CREATE COLUMN TABLE TEAM_11_USER."PRIORITY_SCORES" (
+    ALERT_ID           NVARCHAR(40)  NOT NULL,
+    URGENCY_SCORE      DECIMAL(6,2)  NOT NULL,
+    URGENCY_TIER       NVARCHAR(16)  NOT NULL,
+    HARD_OVERRIDE_CODE NVARCHAR(64),
+    COMPLEXITY_BAND    NVARCHAR(16)  NOT NULL,
+    COMPLEXITY_POINTS  INTEGER       NOT NULL,
+    POLICY_VERSION     NVARCHAR(32)  NOT NULL,
+    CALCULATED_AT      TIMESTAMP     NOT NULL,
+    CAVEATS_JSON       NCLOB
+);
+
+CREATE COLUMN TABLE TEAM_11_USER."ALERT_FACTORS" (
+    ALERT_ID          NVARCHAR(40)  NOT NULL,
+    FACTOR_CODE       NVARCHAR(64)  NOT NULL,
+    RAW_VALUE         NVARCHAR(200),
+    NORMALISED_VALUE  DECIMAL(6,2)  NOT NULL,
+    WEIGHT            DECIMAL(5,4)  NOT NULL,
+    WEIGHTED_POINTS   DECIMAL(6,2)  NOT NULL,
+    REASON_CODE       NVARCHAR(200) NOT NULL,
+    POLICY_VERSION    NVARCHAR(32)  NOT NULL,
+    CALCULATED_AT     TIMESTAMP     NOT NULL
+);
+
+CREATE COLUMN TABLE TEAM_11_USER."PREDICTIVE_SCORES" (
+    ALERT_ID             NVARCHAR(40)  NOT NULL,
+    PREDICTION_TYPE      NVARCHAR(64)  NOT NULL,
+    PREDICTION_VALUE     DECIMAL(9,4)  NOT NULL,
+    MODEL_NAME            NVARCHAR(64)  NOT NULL,
+    MODEL_VERSION        NVARCHAR(32)  NOT NULL,
+    FEATURE_SNAPSHOT_ID  NVARCHAR(64)  NOT NULL,
+    ADVISORY_ONLY        BOOLEAN       NOT NULL DEFAULT TRUE,
+    SCORED_AT            TIMESTAMP     NOT NULL,
+    EXTRA_JSON           NCLOB
+);
+
+CREATE COLUMN TABLE TEAM_11_USER."CASE_FILES" (
+    CASE_FILE_ID     NVARCHAR(40)  PRIMARY KEY,
+    CASE_ID          NVARCHAR(40)  NOT NULL,
+    SCHEMA_VERSION   NVARCHAR(16)  NOT NULL,
+    CONTENT_JSON     NCLOB         NOT NULL,
+    ASSEMBLED_AT     TIMESTAMP     NOT NULL,
+    SOURCE_COVERAGE  DECIMAL(5,4)  NOT NULL
+);
+
+CREATE COLUMN TABLE TEAM_11_USER."SOURCE_CITATIONS" (
+    CITATION_ID       NVARCHAR(40)  PRIMARY KEY,
+    CASE_FILE_ID      NVARCHAR(40)  NOT NULL,
+    SOURCE_TYPE       NVARCHAR(32)  NOT NULL,
+    SOURCE_ID         NVARCHAR(64)  NOT NULL,
+    SOURCE_LOCATOR    NVARCHAR(200) NOT NULL,
+    SOURCE_VERSION    NVARCHAR(64),
+    RETRIEVED_AT      TIMESTAMP     NOT NULL,
+    REGION            NVARCHAR(16)  NOT NULL,
+    PERMISSION_SCOPE  NVARCHAR(32)  NOT NULL
+);
+
+CREATE COLUMN TABLE TEAM_11_USER."NARRATIVE_DRAFTS" (
+    DRAFT_ID             NVARCHAR(40)  PRIMARY KEY,
+    CASE_ID              NVARCHAR(40)  NOT NULL,
+    DRAFT_VERSION        INTEGER       NOT NULL,
+    CONTENT              NCLOB         NOT NULL,
+    GENERATION_ID        NVARCHAR(64),
+    PROMPT_VERSION       NVARCHAR(32),
+    MODEL_VERSION        NVARCHAR(64),
+    CREATED_BY_TYPE      NVARCHAR(16)  NOT NULL,
+    CREATED_AT           TIMESTAMP     NOT NULL,
+    VERIFICATION_STATUS  NVARCHAR(32)  NOT NULL DEFAULT 'unverified'
+);
+
+CREATE COLUMN TABLE TEAM_11_USER."DECISIONS" (
+    DECISION_ID    NVARCHAR(40)  PRIMARY KEY,
+    CASE_ID        NVARCHAR(40)  NOT NULL,
+    DECISION_TYPE  NVARCHAR(32)  NOT NULL,
+    RATIONALE      NCLOB         NOT NULL,
+    DECIDED_BY     NVARCHAR(64)  NOT NULL,
+    ATTESTED       BOOLEAN       NOT NULL,
+    DECIDED_AT     TIMESTAMP     NOT NULL
+);
+
+CREATE COLUMN TABLE TEAM_11_USER."WORKFLOW_INSTANCES" (
+    WORKFLOW_ID           NVARCHAR(40)  PRIMARY KEY,
+    CASE_ID               NVARCHAR(40)  NOT NULL,
+    EXTERNAL_INSTANCE_ID  NVARCHAR(64),
+    STATUS                NVARCHAR(32)  NOT NULL,
+    STARTED_AT            TIMESTAMP     NOT NULL,
+    COMPLETED_AT          TIMESTAMP,
+    IS_FALLBACK           BOOLEAN       NOT NULL DEFAULT TRUE
+);
+
+-- Append-only. No UPDATE/DELETE grants should be exercised by application
+-- code against this table (CLAUDE.md §7).
+CREATE COLUMN TABLE TEAM_11_USER."AUDIT_EVENTS" (
+    EVENT_ID         NVARCHAR(40)  PRIMARY KEY,
+    CASE_ID          NVARCHAR(40)  NOT NULL,
+    EVENT_TYPE       NVARCHAR(64)  NOT NULL,
+    ACTOR_TYPE       NVARCHAR(16)  NOT NULL,
+    ACTOR_ID         NVARCHAR(64)  NOT NULL,
+    OBJECT_TYPE      NVARCHAR(32)  NOT NULL,
+    OBJECT_ID        NVARCHAR(64)  NOT NULL,
+    DETAILS_JSON     NCLOB         NOT NULL,
+    OCCURRED_AT      TIMESTAMP     NOT NULL,
+    CORRELATION_ID   NVARCHAR(64)  NOT NULL
+);
+
+CREATE COLUMN TABLE TEAM_11_USER."IDEMPOTENCY_KEYS" (
+    IDEMPOTENCY_KEY  NVARCHAR(64)  NOT NULL,
+    ENDPOINT         NVARCHAR(128) NOT NULL,
+    REQUEST_HASH     NVARCHAR(64)  NOT NULL,
+    RESPONSE_JSON    NCLOB         NOT NULL,
+    CREATED_AT       TIMESTAMP     NOT NULL,
+    PRIMARY KEY (IDEMPOTENCY_KEY, ENDPOINT)
+);
+
+-- Policy corpus for HANA-native vector retrieval (A3). Populated by
+-- scripts/load_policy_corpus.py using in-DB VECTOR_EMBEDDING (verified
+-- capability — see docs/capability-matrix.md). Embedding happens inside
+-- HANA; no external embedding pipeline.
+CREATE COLUMN TABLE TEAM_11_USER."POLICY_PASSAGES" (
+    DOCUMENT_ID       NVARCHAR(64)   NOT NULL,
+    PASSAGE_LOCATOR   NVARCHAR(64)   NOT NULL,
+    TEXT_CONTENT      NCLOB          NOT NULL,
+    DOC_TYPE          NVARCHAR(32)   NOT NULL,
+    REGION            NVARCHAR(16)   NOT NULL,
+    EFFECTIVE_DATE    DATE,
+    EMBEDDING         REAL_VECTOR(768),
+    PRIMARY KEY (DOCUMENT_ID, PASSAGE_LOCATOR)
+);

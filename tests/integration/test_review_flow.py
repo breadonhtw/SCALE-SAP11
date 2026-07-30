@@ -65,12 +65,18 @@ def test_review_flow_edit_workflow_attested_decision_audit(client):
     assert refused.json()["error_code"] == "ATTESTATION_REQUIRED"
     assert client.get(f"/cases/{case_id}/decisions").json()["count"] == 0
 
-    # attested decision recorded; workflow transitioned to APPROVED
+    # attested decision recorded; case lifecycle reflects it; workflow APPROVED
     decision = client.post(f"/cases/{case_id}/decisions", json={
         "decision_type": "approve_for_escalation", "rationale": "evidence solid",
         "decided_by": "investigator.demo", "attested": True,
     })
     assert decision.status_code == 200
+    assert client.get(f"/cases/{case_id}").json()["case"]["STATUS"] == "ESCALATED"
+    # the queue keeps the alert (not CLOSED) but flags its decided case
+    client.post("/alerts/ALERT-T1/score")
+    queue = client.get("/alerts/queue").json()["queue"]
+    row = next(r for r in queue if r["ALERT_ID"] == "ALERT-T1")
+    assert row["CASE_STATUS"] == "ESCALATED"
     wf2 = client.patch(f"/cases/{case_id}/review-workflows",
                        json={"status": "APPROVED"}).json()["workflow"]
     assert wf2["status"] == "APPROVED"

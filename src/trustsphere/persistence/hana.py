@@ -489,9 +489,11 @@ class HanaRepository(Repository):
             f"""
             SELECT a.ALERT_ID, a.ALERT_TYPE, a.STATUS, a.SLA_DUE_AT,
                    p.URGENCY_SCORE, p.URGENCY_TIER, p.HARD_OVERRIDE_CODE,
-                   p.COMPLEXITY_BAND, p.COMPLEXITY_POINTS, p.CALCULATED_AT
+                   p.COMPLEXITY_BAND, p.COMPLEXITY_POINTS, p.CALCULATED_AT,
+                   c.CASE_ID, c.STATUS AS CASE_STATUS
             FROM {self._t('RISK_ALERTS')} a
             JOIN {self._t('PRIORITY_SCORES')} p ON a.ALERT_ID = p.ALERT_ID
+            LEFT JOIN {self._t('CASES')} c ON c.ALERT_ID = a.ALERT_ID
             WHERE a.STATUS NOT LIKE 'CLOSED%'
             ORDER BY
                 CASE WHEN p.HARD_OVERRIDE_CODE IS NOT NULL THEN 0 ELSE 1 END ASC,
@@ -548,6 +550,12 @@ class HanaRepository(Repository):
     def get_case(self, case_id: str) -> dict[str, Any] | None:
         rows = self._q(f"SELECT * FROM {self._t('CASES')} WHERE CASE_ID = ?", (case_id,))
         return rows[0] if rows else None
+
+    def update_case_status(self, case_id: str, status: str) -> None:
+        self._x(
+            f"UPDATE {self._t('CASES')} SET STATUS = ?, UPDATED_AT = ? WHERE CASE_ID = ?",
+            (status, datetime.now(timezone.utc), case_id),
+        )
 
     def save_case_file(self, case_file: CaseFile) -> None:
         self._x(

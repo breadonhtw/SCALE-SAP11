@@ -139,6 +139,13 @@ class Repository(ABC):
         ...
 
     @abstractmethod
+    def update_case_status(self, case_id: str, status: str) -> None:
+        """Reflect a lifecycle transition (e.g. a recorded decision) on the
+        case row. Never touches RISK_ALERTS — alert closure belongs to the
+        bank's downstream case management, not this prototype (CLAUDE.md §3).
+        """
+
+    @abstractmethod
     def save_case_file(self, case_file: CaseFile) -> None:
         ...
 

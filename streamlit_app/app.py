@@ -52,12 +52,17 @@ for col, name in zip(header, ("#", "Alert", "Tier", "Score", "SLA",
                               "Complexity", "")):
     col.markdown(f"**{name}**")
 
+DECIDED_STATUSES = {"ESCALATED": "escalated", "RETURNED_FOR_EDIT": "returned",
+                    "INFO_REQUESTED": "info requested"}
+
 for rank, row in enumerate(data["queue"], start=1):
     cols = st.columns((1, 6, 3, 2, 4, 3, 2))
     cols[0].write(rank)
     override = " 🔴" if row.get("HARD_OVERRIDE_CODE") else ""
-    cols[1].write(f"`{row['ALERT_ID']}`{override}  \n"
-                  f"{row.get('ALERT_TYPE', '?')} · {row.get('STATUS', '?')}")
+    decided = DECIDED_STATUSES.get(row.get("CASE_STATUS") or "")
+    chip = f" :green-badge[✓ {decided}]" if decided else ""
+    cols[1].markdown(f"`{row['ALERT_ID']}`{override}{chip}  \n"
+                     f"{row.get('ALERT_TYPE', '?')} · {row.get('STATUS', '?')}")
     cols[2].markdown(ui.tier_badge(row.get("URGENCY_TIER", "?")))
     cols[3].write(f"{row.get('URGENCY_SCORE', 0):.1f}")
     cols[4].write(ui.sla_text(row.get("SLA_DUE_AT")))

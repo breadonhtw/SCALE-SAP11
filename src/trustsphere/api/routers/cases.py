@@ -185,10 +185,20 @@ def create_decision(
         decided_at=datetime.now(timezone.utc),
     )
     repo.save_decision(decision)
+    # Reflect the decision on the case lifecycle. The alert itself stays
+    # open — closure belongs to the bank's downstream case management, never
+    # to this prototype (CLAUDE.md §3 non-goals: no autonomous dismissal).
+    case_status = {
+        DecisionType.APPROVE_FOR_ESCALATION: "ESCALATED",
+        DecisionType.RETURN_FOR_EDIT: "RETURNED_FOR_EDIT",
+        DecisionType.REQUEST_INFORMATION: "INFO_REQUESTED",
+    }[decision_type]
+    repo.update_case_status(case_id, case_status)
     record_event(
         repo, case_id=case_id, event_type=AuditEventType.DECISION_RECORDED, actor_type=ActorType.HUMAN,
         actor_id=body.decided_by, object_type="DECISION", object_id=decision.decision_id,
-        details={"decision_type": decision.decision_type.value, "attested": decision.attested},
+        details={"decision_type": decision.decision_type.value, "attested": decision.attested,
+                 "case_status": case_status},
     )
     response = {"backend": repo.backend_label(), "decision": decision.model_dump()}
     if idempotency_key:

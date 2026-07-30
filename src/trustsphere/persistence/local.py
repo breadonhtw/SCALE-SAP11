@@ -412,9 +412,11 @@ class LocalSQLiteRepository(Repository):
             """
             SELECT a.ALERT_ID, a.ALERT_TYPE, a.STATUS, a.SLA_DUE_AT,
                    p.URGENCY_SCORE, p.URGENCY_TIER, p.HARD_OVERRIDE_CODE,
-                   p.COMPLEXITY_BAND, p.COMPLEXITY_POINTS, p.CALCULATED_AT
+                   p.COMPLEXITY_BAND, p.COMPLEXITY_POINTS, p.CALCULATED_AT,
+                   c.CASE_ID, c.STATUS AS CASE_STATUS
             FROM RISK_ALERTS a
             JOIN PRIORITY_SCORES p ON a.ALERT_ID = p.ALERT_ID
+            LEFT JOIN CASES c ON c.ALERT_ID = a.ALERT_ID
             WHERE a.STATUS NOT LIKE 'CLOSED%'
             ORDER BY
                 CASE WHEN p.HARD_OVERRIDE_CODE IS NOT NULL THEN 0 ELSE 1 END ASC,
@@ -575,6 +577,13 @@ class LocalSQLiteRepository(Repository):
         return dict(row) if row else None
 
     # -- decisions / workflow / audit -----------------------------------------
+    def update_case_status(self, case_id: str, status: str) -> None:
+        with self.conn:
+            self.conn.execute(
+                "UPDATE CASES SET STATUS = ?, UPDATED_AT = ? WHERE CASE_ID = ?",
+                (status, _iso(datetime.now(timezone.utc)), case_id),
+            )
+
     def save_decision(self, decision: Decision) -> None:
         with self.conn:
             self.conn.execute(

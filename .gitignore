@@ -1,0 +1,12 @@
+# Credentials — live outside the repo in ~/Desktop/SAP/team-11/; never commit
+*credentials*.json
+.env
+*.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# macOS
+.DS_Store

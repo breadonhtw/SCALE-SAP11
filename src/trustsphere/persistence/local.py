@@ -407,7 +407,14 @@ class LocalSQLiteRepository(Repository):
             caveats=json.loads(row["CAVEATS_JSON"]) if row["CAVEATS_JSON"] else [],
         )
 
-    def list_scored_alerts_ordered(self, limit: int = 200) -> list[dict[str, Any]]:
+    def count_scored_open_alerts(self) -> int:
+        row = self.conn.execute(
+            """SELECT COUNT(*) AS N FROM RISK_ALERTS a
+               JOIN PRIORITY_SCORES p ON a.ALERT_ID = p.ALERT_ID
+               WHERE a.STATUS NOT LIKE 'CLOSED%'""").fetchone()
+        return int(row["N"])
+
+    def list_scored_alerts_ordered(self, limit: int = 200, offset: int = 0) -> list[dict[str, Any]]:
         rows = self.conn.execute(
             """
             SELECT a.ALERT_ID, a.ALERT_TYPE, a.STATUS, a.SLA_DUE_AT,
@@ -425,9 +432,9 @@ class LocalSQLiteRepository(Repository):
                 END ASC,
                 a.SLA_DUE_AT ASC,
                 p.URGENCY_SCORE DESC
-            LIMIT ?
+            LIMIT ? OFFSET ?
             """,
-            (limit,),
+            (limit, offset),
         ).fetchall()
         return [dict(r) for r in rows]
 

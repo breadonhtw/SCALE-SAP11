@@ -105,7 +105,11 @@ class Repository(ABC):
         ...
 
     @abstractmethod
-    def list_scored_alerts_ordered(self, limit: int = 200) -> list[dict[str, Any]]:
+    def count_scored_open_alerts(self) -> int:
+        ...
+
+    @abstractmethod
+    def list_scored_alerts_ordered(self, limit: int = 200, offset: int = 0) -> list[dict[str, Any]]:
         """Queue-ordered view: hard overrides first, tier, SLA remaining,
         urgency score, complexity as tie-break (CLAUDE.md §9 "Queue policy").
         """

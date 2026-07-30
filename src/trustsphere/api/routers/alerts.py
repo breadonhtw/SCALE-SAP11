@@ -42,13 +42,16 @@ def list_alerts(
 
 
 @router.get("/alerts/queue")
-def ranked_queue(limit: int = 200, repo: Repository = Depends(get_repo)):
+def ranked_queue(limit: int = 200, offset: int = 0,
+                 repo: Repository = Depends(get_repo)):
     """Deterministic queue order: hard overrides -> tier -> SLA remaining ->
     urgency score -> complexity as tie-break (CLAUDE.md §9 "Queue policy").
     Requires alerts to have been scored first via POST /alerts/{id}/score.
     """
-    rows = repo.list_scored_alerts_ordered(limit=limit)
-    return {"backend": repo.backend_label(), "count": len(rows), "queue": rows}
+    rows = repo.list_scored_alerts_ordered(limit=limit, offset=offset)
+    return {"backend": repo.backend_label(), "count": len(rows),
+            "total": repo.count_scored_open_alerts(),
+            "limit": limit, "offset": offset, "queue": rows}
 
 
 @router.get("/alerts/{alert_id}")

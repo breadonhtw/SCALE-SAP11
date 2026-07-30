@@ -55,8 +55,8 @@ def health() -> dict:
     return _get("/health")
 
 
-def queue(limit: int = 200) -> dict:
-    return _get("/alerts/queue", limit=limit)
+def queue(limit: int = 200, offset: int = 0) -> dict:
+    return _get("/alerts/queue", limit=limit, offset=offset)
 
 
 def score_all() -> dict:

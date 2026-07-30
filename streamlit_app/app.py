@@ -31,8 +31,11 @@ except Exception:
 
 ui.backend_banner(health)
 
-data = api_client.queue()
-if data["count"] == 0:
+PAGE_SIZE = 50
+page = int(st.session_state.get("queue_page", 0))
+data = api_client.queue(limit=PAGE_SIZE, offset=page * PAGE_SIZE)
+total = data.get("total", data["count"])
+if total == 0:
     st.info("No scored alerts yet — the queue ranks alerts that have been "
             "through the deterministic scoring engine.")
     if st.button("Score all alerts now", type="primary"):
@@ -42,10 +45,20 @@ if data["count"] == 0:
         st.rerun()
     st.stop()
 
-st.subheader(f"Ranked alert queue — {data['count']} alerts")
-st.caption("Queue order is server-side policy (hard overrides → urgency tier → "
-           "SLA remaining → score; complexity only as tie-break). "
-           f"Backend `{data['backend']}`")
+pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
+st.subheader(f"Ranked alert queue — {total:,} open alerts")
+nav_l, nav_mid, nav_r = st.columns((1, 4, 1))
+if nav_l.button("← Prev", disabled=page == 0):
+    st.session_state["queue_page"] = page - 1
+    st.rerun()
+nav_mid.caption(
+    f"Showing ranks {page * PAGE_SIZE + 1:,}–{page * PAGE_SIZE + data['count']:,} "
+    f"of {total:,} (page {page + 1}/{pages}). Queue order is server-side policy "
+    "(hard overrides → urgency tier → SLA remaining → score; complexity only "
+    f"as tie-break). Backend `{data['backend']}`")
+if nav_r.button("Next →", disabled=page >= pages - 1):
+    st.session_state["queue_page"] = page + 1
+    st.rerun()
 
 header = st.columns((1, 6, 3, 2, 4, 3, 2))
 for col, name in zip(header, ("#", "Alert", "Tier", "Score", "SLA",
@@ -55,7 +68,7 @@ for col, name in zip(header, ("#", "Alert", "Tier", "Score", "SLA",
 DECIDED_STATUSES = {"ESCALATED": "escalated", "RETURNED_FOR_EDIT": "returned",
                     "INFO_REQUESTED": "info requested"}
 
-for rank, row in enumerate(data["queue"], start=1):
+for rank, row in enumerate(data["queue"], start=page * PAGE_SIZE + 1):
     cols = st.columns((1, 6, 3, 2, 4, 3, 2))
     cols[0].write(rank)
     override = " 🔴" if row.get("HARD_OVERRIDE_CODE") else ""

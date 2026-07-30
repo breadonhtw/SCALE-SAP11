@@ -18,10 +18,43 @@ from trustsphere.generation.validation import validate  # noqa: E402
 
 @pytest.fixture()
 def case_file() -> dict:
-    cf = json.loads(
-        (ROOT / "data" / "fixtures" / "casefile_hero.json").read_text(encoding="utf-8"))
-    cf["case_id"] = "CASE-TEST"
-    return cf
+    """Track A CaseFile shape (domain/cases.py), minimal but representative."""
+    return {
+        "case_id": "CASE-TEST",
+        "alert_details": {"alert_id": "ALT-1", "alert_type": "SANCTIONS_SCREENING",
+                           "alert_priority": "CRITICAL", "status": "OPEN"},
+        "priority_explanation": {"urgency_score": 87.5, "urgency_tier": "CRITICAL",
+                                   "hard_override_code": "SANCTIONS_MATCH",
+                                   "complexity_band": "HIGH",
+                                   "policy_version": "p-1"},
+        "customer_profile": {"company_id": "CMP-1", "legal_name": "Meridian Ltd",
+                              "kyc_effective_status": "EXPIRED",
+                              "kyc_risk_rating": "HIGH"},
+        "transaction_timeline": [
+            {"transaction_id": "TXN-2026-118344", "occurred_at": "2026-07-21T09:30:00Z",
+             "amount_usd": "1250000.00", "direction": "OUTBOUND",
+             "origin_country_id": "SGP", "destination_country_id": "KYM"}],
+        "entity_relationships": [
+            {"relationship_type": "OWNS", "source_node": "OWN-2214",
+             "target_node": "CMP-1", "citation_id": "CIT-00031"}],
+        "policy_context": [
+            {"document_id": "POL-AML-014", "passage_locator": "SEC-4.2",
+             "text": "Confirmed sanctions matches escalate within one business day.",
+             "similarity_score": 0.83, "citation_id": "CIT-00044"}],
+        "missing_information": [
+            {"field": "predictive_advisories", "reason": "no prediction yet"}],
+        "source_provenance": [
+            {"citation_id": "CIT-00001", "source_id": "RISK_ALERTS",
+             "source_locator": "ALERT_ID=ALT-1"},
+            {"citation_id": "CIT-00003", "source_id": "COMPANIES",
+             "source_locator": "COMPANY_ID=CMP-1"},
+            {"citation_id": "CIT-00017", "source_id": "TRANSACTIONS",
+             "source_locator": "TRANSACTION_ID=TXN-2026-118344"},
+            {"citation_id": "CIT-00031", "source_id": "GRAPH",
+             "source_locator": "OWNS:OWN-2214->CMP-1"},
+            {"citation_id": "CIT-00044", "source_id": "POLICY_PASSAGES",
+             "source_locator": "POL-AML-014 SEC-4.2"}],
+    }
 
 
 def _result(sentences: list[Sentence]) -> GenerationResult:
@@ -94,12 +127,20 @@ def test_fallback_produces_valid_cited_result(case_file):
 
 def test_fallback_handles_thin_case_file():
     thin = {"alert_details": {"alert_id": "A-1", "alert_type": "X",
-                               "citation_ids": ["CIT-1"]},
-            "priority_explanation": {"urgency": {"score": 10, "tier": "LOW",
-                                                   "policy_version": "p1"},
-                                       "citation_ids": ["CIT-2"]},
-            "source_provenance": [{"citation_id": "CIT-1"}, {"citation_id": "CIT-2"}]}
+                               "alert_priority": "LOW"},
+            "priority_explanation": {"urgency_score": 10,
+                                       "urgency_tier": "LOW",
+                                       "policy_version": "p1"},
+            "source_provenance": [{"citation_id": "CIT-1",
+                                    "source_id": "RISK_ALERTS",
+                                    "source_locator": "ALERT_ID=A-1"}]}
     result = FallbackGenerator().generate("explain", thin)
     assert result.sentences
     val = validate(result, thin)
     assert val["citation_coverage"] > 0
+
+
+def test_fallback_never_raises_on_garbage():
+    result = FallbackGenerator().generate("narrative", {"transaction_timeline": "not-a-list"})
+    assert result.backend == "fallback"
+    assert result.sentences

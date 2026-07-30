@@ -14,7 +14,13 @@ from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+# The tenant's TRUSTSPHERE_REFERENCE snapshot stores entity ids as INTEGERs
+# (e.g. ALERT_ID=19263) while the domain treats ids as opaque strings (the
+# local seed uses "ALERT-9001"). Coerce at the model boundary so both
+# backends satisfy the same types.
+_COERCE_IDS = ConfigDict(coerce_numbers_to_str=True)
 
 
 class UrgencyTier(StrEnum):
@@ -33,6 +39,7 @@ class ComplexityBand(StrEnum):
 
 class AlertSummary(BaseModel):
     """Minimal alert identity — what `GET /alerts` returns per row."""
+    model_config = _COERCE_IDS
 
     alert_id: str
     company_id: str | None = None
@@ -51,6 +58,7 @@ class AlertFactorInputs(BaseModel):
     note in `field_sources` so a missing value can be explained rather than
     silently defaulted without a trace.
     """
+    model_config = _COERCE_IDS
 
     alert_id: str
 
@@ -104,6 +112,7 @@ class HardOverrideResult(BaseModel):
 
 
 class ScoreResult(BaseModel):
+    model_config = _COERCE_IDS
     alert_id: str
     urgency_score: float
     urgency_tier: UrgencyTier
@@ -117,6 +126,7 @@ class ScoreResult(BaseModel):
 
 
 class ComplexityInputs(BaseModel):
+    model_config = _COERCE_IDS
     alert_id: str
     entity_count: int = 0
     jurisdiction_count: int = 0

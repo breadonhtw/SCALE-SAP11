@@ -113,7 +113,9 @@ class OrchestrationGenerator:
                     "model": {
                         "name": self.model_name,
                         "version": "latest",
-                        "params": {"max_completion_tokens": 1200, "temperature": 0.1},
+                        # 3000: real CaseFiles carry ~25 transactions; 1200
+                        # truncated the narrative JSON mid-string (live find).
+                        "params": {"max_completion_tokens": 3000, "temperature": 0.1},
                     },
                 },
                 "filtering": FILTERING_MODULE,

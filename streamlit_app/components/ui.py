@@ -37,10 +37,13 @@ def sla_text(due_at_iso: str | None) -> str:
 
 
 def backend_banner(health: dict) -> None:
-    if health.get("backend") != "hana":
+    backend = health.get("backend", "unreachable")
+    if str(backend).startswith("hana"):
+        st.caption(f"🟢 Backend: **{backend}** — live SAP HANA Cloud")
+    else:
         st.warning(
-            f"Backend: **{health.get('backend', 'unreachable')}** — local prototype "
-            "fallback. Not connected to SAP HANA Cloud.", icon="⚠️")
+            f"Backend: **{backend}** — local prototype fallback. "
+            "Not connected to SAP HANA Cloud.", icon="⚠️")
 
 
 def table(rows: list[dict]) -> None:

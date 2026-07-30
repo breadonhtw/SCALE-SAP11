@@ -14,6 +14,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
+from trustsphere.domain.alerts import _COERCE_IDS
+
 
 class SourceType(StrEnum):
     SQL_FACT = "sql_fact"
@@ -39,6 +41,7 @@ class Citation(BaseModel):
     numbers or claims without a source identifier and retrieval timestamp
     (CLAUDE.md §8).
     """
+    model_config = _COERCE_IDS
 
     citation_id: str
     source_type: SourceType

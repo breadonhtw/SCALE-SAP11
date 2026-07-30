@@ -12,11 +12,17 @@ from decimal import Decimal
 
 from pydantic import BaseModel
 
-from trustsphere.domain.alerts import ComplexityBand, ScoreResult, UrgencyTier
+from trustsphere.domain.alerts import (
+    _COERCE_IDS,
+    ComplexityBand,
+    ScoreResult,
+    UrgencyTier,
+)
 from trustsphere.domain.citations import Citation, MissingInformation
 
 
 class AlertDetails(BaseModel):
+    model_config = _COERCE_IDS
     alert_id: str
     alert_type: str | None
     alert_priority: str | None
@@ -47,6 +53,7 @@ class PredictiveAdvisory(BaseModel):
 
 
 class CustomerProfile(BaseModel):
+    model_config = _COERCE_IDS
     company_id: str
     legal_name: str | None
     registration_number: str | None
@@ -59,12 +66,14 @@ class CustomerProfile(BaseModel):
 
 
 class CounterpartyProfile(BaseModel):
+    model_config = _COERCE_IDS
     counterparty_label: str
     jurisdiction_country_id: str | None
     appearance_count: int
 
 
 class TransactionTimelineEntry(BaseModel):
+    model_config = _COERCE_IDS
     transaction_id: str
     occurred_at: datetime | None
     amount_usd: Decimal | None
@@ -76,6 +85,7 @@ class TransactionTimelineEntry(BaseModel):
 
 
 class RelationshipEdge(BaseModel):
+    model_config = _COERCE_IDS
     relationship_type: str
     source_node: str
     target_node: str
@@ -83,6 +93,7 @@ class RelationshipEdge(BaseModel):
 
 
 class RelatedAlertRef(BaseModel):
+    model_config = _COERCE_IDS
     alert_id: str
     alert_type: str | None
     status: str | None
@@ -90,6 +101,7 @@ class RelatedAlertRef(BaseModel):
 
 
 class PolicyPassage(BaseModel):
+    model_config = _COERCE_IDS
     document_id: str
     passage_locator: str
     text: str
@@ -98,6 +110,7 @@ class PolicyPassage(BaseModel):
 
 
 class HistoricalCaseRef(BaseModel):
+    model_config = _COERCE_IDS
     case_id: str
     similarity_score: float
     permission_scope: str

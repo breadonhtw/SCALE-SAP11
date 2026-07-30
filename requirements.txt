@@ -1,0 +1,12 @@
+# Track B (cockpit + mock backend) — Python 3.11+
+# Person A's A1 owns the full pyproject.toml; keep this minimal until merged.
+streamlit>=1.36
+fastapi>=0.111
+uvicorn>=0.30
+requests>=2.32
+pydantic>=2.7
+pytest>=8.0
+# NOTE: AI Core orchestration is called via the documented v2 REST API with
+# requests (src/trustsphere/generation/aicore.py). sap-ai-sdk-gen is not
+# installed on this dev machine: its dependency tree needs pandas, whose DLLs
+# are blocked by the local Application Control policy.

@@ -1,0 +1,301 @@
+{
+  "policy_version": "scoring-2026.07.30-1",
+  "as_of": "2026-07-30T02:00:00Z",
+  "alerts": [
+    {
+      "alert_id": "ALT-2026-004417",
+      "alert_type": "SANCTIONS_SCREENING",
+      "alert_priority": "CRITICAL",
+      "status": "OPEN",
+      "created_at": "2026-07-22T08:14:00Z",
+      "transaction_id": "TXN-2026-118344",
+      "source_system": "TM-CORE",
+      "source_updated_at": "2026-07-29T21:14:03Z",
+      "company": {
+        "company_id": "CMP-1042",
+        "legal_name": "Meridian Trade Partners Pte Ltd",
+        "registration_number": "REG-SG-115533",
+        "lei_code": "LEI-549300MERIDIAN042",
+        "kyc_effective_status": "EXPIRED",
+        "kyc_risk_rating": "HIGH",
+        "client_segment": "CORPORATE",
+        "jurisdiction_code": "SG"
+      },
+      "urgency": {
+        "score": 87.5,
+        "tier": "CRITICAL",
+        "hard_override_code": "SANCTIONS_MATCH",
+        "hard_override_reason": "Confirmed sanctions list match on counterparty Baltica Freight OU (OFAC SDN)",
+        "policy_version": "scoring-2026.07.30-1",
+        "calculated_at": "2026-07-30T02:00:00Z"
+      },
+      "complexity": {
+        "band": "HIGH",
+        "score": 7,
+        "drivers": ["entity_count=9", "jurisdictions=4", "missing_kyc=2", "related_alerts=2"]
+      },
+      "sla": { "due_at": "2026-07-31T08:14:00Z", "remaining_hours": 30.2, "breached": false },
+      "advisory": {
+        "prediction_type": "expected_resolution_hours",
+        "prediction_value": 96.0,
+        "sla_margin_hours": -65.8,
+        "band": "AT_RISK",
+        "model_name": "heuristic-fallback",
+        "model_version": "0.1.0",
+        "feature_snapshot_id": "FS-2026-07-30-001",
+        "advisory_only": true,
+        "scored_at": "2026-07-30T02:05:00Z"
+      },
+      "queue_rank": 1,
+      "region": "APJ",
+      "rule": {
+        "rule_id": "RULE-SCR-01",
+        "rule_name": "Counterparty sanctions screening",
+        "rule_intent": "Detect payments to counterparties matching active sanctions designations."
+      },
+      "related_alert_ids": ["ALT-2026-003902", "ALT-2026-002210"],
+      "prior_case_ids": ["CASE-H-0331"],
+      "factors": [
+        {"factor_code": "TYPOLOGY_SEVERITY", "label": "Typology / rule severity", "raw_value": "SANCTIONS_SCREENING", "normalised_value": 0.95, "weight": 0.25, "weighted_points": 23.75, "reason_code": "RC_TYPOLOGY_SANCTIONS"},
+        {"factor_code": "PARTY_RISK", "label": "Customer & counterparty risk", "raw_value": "HIGH/SDN", "normalised_value": 0.9, "weight": 0.2, "weighted_points": 18.0, "reason_code": "RC_PARTY_SDN_MATCH"},
+        {"factor_code": "JURISDICTION_EXPOSURE", "label": "Jurisdiction / regulatory exposure", "raw_value": "SG->EE->AE", "normalised_value": 0.8, "weight": 0.2, "weighted_points": 16.0, "reason_code": "RC_JURIS_HIGH_RISK_CORRIDOR"},
+        {"factor_code": "SLA_PROXIMITY", "label": "Alert age & SLA proximity", "raw_value": "30.2h remaining", "normalised_value": 0.85, "weight": 0.2, "weighted_points": 17.0, "reason_code": "RC_SLA_IMMINENT"},
+        {"factor_code": "MATERIALITY", "label": "Transaction materiality & velocity", "raw_value": "1250000.00 USD", "normalised_value": 0.85, "weight": 0.15, "weighted_points": 12.75, "reason_code": "RC_AMOUNT_HIGH_VALUE"}
+      ]
+    },
+    {
+      "alert_id": "ALT-2026-004561",
+      "alert_type": "TRANSACTION_PATTERN",
+      "alert_priority": "HIGH",
+      "status": "INVESTIGATING",
+      "created_at": "2026-07-18T14:02:00Z",
+      "transaction_id": "TXN-2026-116488",
+      "source_system": "TM-CORE",
+      "source_updated_at": "2026-07-29T21:14:03Z",
+      "company": {
+        "company_id": "CMP-2287",
+        "legal_name": "Aurelia Components GmbH",
+        "registration_number": "REG-DE-887210",
+        "lei_code": "LEI-529900AURELIA287",
+        "kyc_effective_status": "VERIFIED",
+        "kyc_risk_rating": "MEDIUM",
+        "client_segment": "CORPORATE",
+        "jurisdiction_code": "DE"
+      },
+      "urgency": {
+        "score": 74.2,
+        "tier": "HIGH",
+        "hard_override_code": null,
+        "hard_override_reason": null,
+        "policy_version": "scoring-2026.07.30-1",
+        "calculated_at": "2026-07-30T02:00:00Z"
+      },
+      "complexity": {
+        "band": "MEDIUM",
+        "score": 5,
+        "drivers": ["entity_count=6", "jurisdictions=3", "txn_count=41"]
+      },
+      "sla": { "due_at": "2026-07-30T14:02:00Z", "remaining_hours": 12.0, "breached": false },
+      "advisory": {
+        "prediction_type": "expected_resolution_hours",
+        "prediction_value": 40.0,
+        "sla_margin_hours": -28.0,
+        "band": "AT_RISK",
+        "model_name": "heuristic-fallback",
+        "model_version": "0.1.0",
+        "feature_snapshot_id": "FS-2026-07-30-001",
+        "advisory_only": true,
+        "scored_at": "2026-07-30T02:05:00Z"
+      },
+      "queue_rank": 2,
+      "region": "EU",
+      "rule": {
+        "rule_id": "RULE-VEL-04",
+        "rule_name": "Rapid movement / structuring velocity",
+        "rule_intent": "Detect bursts of just-below-threshold transfers indicative of structuring or layering."
+      },
+      "related_alert_ids": [],
+      "prior_case_ids": [],
+      "factors": [
+        {"factor_code": "TYPOLOGY_SEVERITY", "label": "Typology / rule severity", "raw_value": "TRANSACTION_PATTERN", "normalised_value": 0.7, "weight": 0.25, "weighted_points": 17.5, "reason_code": "RC_TYPOLOGY_STRUCTURING"},
+        {"factor_code": "PARTY_RISK", "label": "Customer & counterparty risk", "raw_value": "MEDIUM", "normalised_value": 0.5, "weight": 0.2, "weighted_points": 10.0, "reason_code": "RC_PARTY_MEDIUM"},
+        {"factor_code": "JURISDICTION_EXPOSURE", "label": "Jurisdiction / regulatory exposure", "raw_value": "DE->TR->GE", "normalised_value": 0.65, "weight": 0.2, "weighted_points": 13.0, "reason_code": "RC_JURIS_ELEVATED"},
+        {"factor_code": "SLA_PROXIMITY", "label": "Alert age & SLA proximity", "raw_value": "12.0h remaining", "normalised_value": 0.95, "weight": 0.2, "weighted_points": 19.0, "reason_code": "RC_SLA_IMMINENT"},
+        {"factor_code": "MATERIALITY", "label": "Transaction materiality & velocity", "raw_value": "41 txns / 9 days", "normalised_value": 0.98, "weight": 0.15, "weighted_points": 14.7, "reason_code": "RC_VELOCITY_BURST"}
+      ]
+    },
+    {
+      "alert_id": "ALT-2026-004488",
+      "alert_type": "KYC_REFRESH",
+      "alert_priority": "HIGH",
+      "status": "OPEN",
+      "created_at": "2026-07-10T09:40:00Z",
+      "transaction_id": null,
+      "source_system": "KYC-HUB",
+      "source_updated_at": "2026-07-28T18:00:00Z",
+      "company": {
+        "company_id": "CMP-3095",
+        "legal_name": "Sunda Agri Exports PT",
+        "registration_number": "REG-ID-334902",
+        "lei_code": "LEI-254900SUNDAAGRI95",
+        "kyc_effective_status": "EXPIRED",
+        "kyc_risk_rating": "HIGH",
+        "client_segment": "CORPORATE",
+        "jurisdiction_code": "ID"
+      },
+      "urgency": {
+        "score": 61.8,
+        "tier": "HIGH",
+        "hard_override_code": null,
+        "hard_override_reason": null,
+        "policy_version": "scoring-2026.07.30-1",
+        "calculated_at": "2026-07-30T02:00:00Z"
+      },
+      "complexity": {
+        "band": "LOW",
+        "score": 2,
+        "drivers": ["entity_count=3", "jurisdictions=1", "missing_kyc=1"]
+      },
+      "sla": { "due_at": "2026-08-02T09:40:00Z", "remaining_hours": 79.7, "breached": false },
+      "advisory": {
+        "prediction_type": "expected_resolution_hours",
+        "prediction_value": 30.0,
+        "sla_margin_hours": 49.7,
+        "band": "COMFORTABLE",
+        "model_name": "heuristic-fallback",
+        "model_version": "0.1.0",
+        "feature_snapshot_id": "FS-2026-07-30-001",
+        "advisory_only": true,
+        "scored_at": "2026-07-30T02:05:00Z"
+      },
+      "queue_rank": 3,
+      "region": "APJ",
+      "rule": {
+        "rule_id": "RULE-KYC-02",
+        "rule_name": "High-risk customer KYC expiry",
+        "rule_intent": "Flag high-risk customers transacting on expired KYC verification."
+      },
+      "related_alert_ids": [],
+      "prior_case_ids": [],
+      "factors": [
+        {"factor_code": "TYPOLOGY_SEVERITY", "label": "Typology / rule severity", "raw_value": "KYC_REFRESH", "normalised_value": 0.55, "weight": 0.25, "weighted_points": 13.75, "reason_code": "RC_TYPOLOGY_KYC"},
+        {"factor_code": "PARTY_RISK", "label": "Customer & counterparty risk", "raw_value": "HIGH", "normalised_value": 0.75, "weight": 0.2, "weighted_points": 15.0, "reason_code": "RC_PARTY_HIGH"},
+        {"factor_code": "JURISDICTION_EXPOSURE", "label": "Jurisdiction / regulatory exposure", "raw_value": "ID", "normalised_value": 0.6, "weight": 0.2, "weighted_points": 12.0, "reason_code": "RC_JURIS_ELEVATED"},
+        {"factor_code": "SLA_PROXIMITY", "label": "Alert age & SLA proximity", "raw_value": "79.7h remaining", "normalised_value": 0.55, "weight": 0.2, "weighted_points": 11.0, "reason_code": "RC_SLA_NEAR"},
+        {"factor_code": "MATERIALITY", "label": "Transaction materiality & velocity", "raw_value": "480000.00 USD/30d", "normalised_value": 0.67, "weight": 0.15, "weighted_points": 10.05, "reason_code": "RC_AMOUNT_ELEVATED"}
+      ]
+    },
+    {
+      "alert_id": "ALT-2026-004390",
+      "alert_type": "TRANSACTION_PATTERN",
+      "alert_priority": "MEDIUM",
+      "status": "OPEN",
+      "created_at": "2026-07-25T11:20:00Z",
+      "transaction_id": "TXN-2026-117001",
+      "source_system": "TM-CORE",
+      "source_updated_at": "2026-07-29T21:14:03Z",
+      "company": {
+        "company_id": "CMP-4110",
+        "legal_name": "Nordwind Maritime AS",
+        "registration_number": "REG-NO-556120",
+        "lei_code": "LEI-549300NORDWIND10",
+        "kyc_effective_status": "VERIFIED",
+        "kyc_risk_rating": "MEDIUM",
+        "client_segment": "CORPORATE",
+        "jurisdiction_code": "NO"
+      },
+      "urgency": {
+        "score": 48.9,
+        "tier": "MEDIUM",
+        "hard_override_code": null,
+        "hard_override_reason": null,
+        "policy_version": "scoring-2026.07.30-1",
+        "calculated_at": "2026-07-30T02:00:00Z"
+      },
+      "complexity": {
+        "band": "MEDIUM",
+        "score": 4,
+        "drivers": ["entity_count=5", "jurisdictions=2"]
+      },
+      "sla": { "due_at": "2026-08-04T11:20:00Z", "remaining_hours": 129.3, "breached": false },
+      "advisory": {
+        "prediction_type": "expected_resolution_hours",
+        "prediction_value": 55.0,
+        "sla_margin_hours": 74.3,
+        "band": "COMFORTABLE",
+        "model_name": "heuristic-fallback",
+        "model_version": "0.1.0",
+        "feature_snapshot_id": "FS-2026-07-30-001",
+        "advisory_only": true,
+        "scored_at": "2026-07-30T02:05:00Z"
+      },
+      "queue_rank": 4,
+      "region": "EU",
+      "rule": {
+        "rule_id": "RULE-VEL-02",
+        "rule_name": "Round-amount repetition",
+        "rule_intent": "Detect repeated round-amount transfers inconsistent with trading profile."
+      },
+      "related_alert_ids": [],
+      "prior_case_ids": [],
+      "factors": [
+        {"factor_code": "TYPOLOGY_SEVERITY", "label": "Typology / rule severity", "raw_value": "TRANSACTION_PATTERN", "normalised_value": 0.6, "weight": 0.25, "weighted_points": 15.0, "reason_code": "RC_TYPOLOGY_PATTERN"},
+        {"factor_code": "PARTY_RISK", "label": "Customer & counterparty risk", "raw_value": "MEDIUM", "normalised_value": 0.45, "weight": 0.2, "weighted_points": 9.0, "reason_code": "RC_PARTY_MEDIUM"},
+        {"factor_code": "JURISDICTION_EXPOSURE", "label": "Jurisdiction / regulatory exposure", "raw_value": "NO->LV", "normalised_value": 0.4, "weight": 0.2, "weighted_points": 8.0, "reason_code": "RC_JURIS_MODERATE"},
+        {"factor_code": "SLA_PROXIMITY", "label": "Alert age & SLA proximity", "raw_value": "129.3h remaining", "normalised_value": 0.35, "weight": 0.2, "weighted_points": 7.0, "reason_code": "RC_SLA_OK"},
+        {"factor_code": "MATERIALITY", "label": "Transaction materiality & velocity", "raw_value": "665000.00 USD", "normalised_value": 0.66, "weight": 0.15, "weighted_points": 9.9, "reason_code": "RC_AMOUNT_ELEVATED"}
+      ]
+    },
+    {
+      "alert_id": "ALT-2026-004102",
+      "alert_type": "KYC_REFRESH",
+      "alert_priority": "MEDIUM",
+      "status": "INVESTIGATING",
+      "created_at": "2026-07-05T16:45:00Z",
+      "transaction_id": null,
+      "source_system": "KYC-HUB",
+      "source_updated_at": "2026-07-28T18:00:00Z",
+      "company": {
+        "company_id": "CMP-1877",
+        "legal_name": "Cobalt Ridge Trading Ltd",
+        "registration_number": "REG-HK-772915",
+        "lei_code": "LEI-254900COBALTRDG77",
+        "kyc_effective_status": "EXPIRED",
+        "kyc_risk_rating": "MEDIUM",
+        "client_segment": "CORPORATE",
+        "jurisdiction_code": "HK"
+      },
+      "urgency": {
+        "score": 42.1,
+        "tier": "MEDIUM",
+        "hard_override_code": null,
+        "hard_override_reason": null,
+        "policy_version": "scoring-2026.07.30-1",
+        "calculated_at": "2026-07-30T02:00:00Z"
+      },
+      "complexity": {
+        "band": "LOW",
+        "score": 2,
+        "drivers": ["entity_count=2", "jurisdictions=1", "missing_kyc=1"]
+      },
+      "sla": { "due_at": "2026-08-06T16:45:00Z", "remaining_hours": 182.7, "breached": false },
+      "advisory": null,
+      "queue_rank": 5,
+      "region": "APJ",
+      "rule": {
+        "rule_id": "RULE-KYC-02",
+        "rule_name": "High-risk customer KYC expiry",
+        "rule_intent": "Flag high-risk customers transacting on expired KYC verification."
+      },
+      "related_alert_ids": [],
+      "prior_case_ids": [],
+      "factors": [
+        {"factor_code": "TYPOLOGY_SEVERITY", "label": "Typology / rule severity", "raw_value": "KYC_REFRESH", "normalised_value": 0.55, "weight": 0.25, "weighted_points": 13.75, "reason_code": "RC_TYPOLOGY_KYC"},
+        {"factor_code": "PARTY_RISK", "label": "Customer & counterparty risk", "raw_value": "MEDIUM", "normalised_value": 0.5, "weight": 0.2, "weighted_points": 10.0, "reason_code": "RC_PARTY_MEDIUM"},
+        {"factor_code": "JURISDICTION_EXPOSURE", "label": "Jurisdiction / regulatory exposure", "raw_value": "HK", "normalised_value": 0.45, "weight": 0.2, "weighted_points": 9.0, "reason_code": "RC_JURIS_MODERATE"},
+        {"factor_code": "SLA_PROXIMITY", "label": "Alert age & SLA proximity", "raw_value": "182.7h remaining", "normalised_value": 0.2, "weight": 0.2, "weighted_points": 4.0, "reason_code": "RC_SLA_OK"},
+        {"factor_code": "MATERIALITY", "label": "Transaction materiality & velocity", "raw_value": "220000.00 USD/30d", "normalised_value": 0.36, "weight": 0.15, "weighted_points": 5.4, "reason_code": "RC_AMOUNT_MODERATE"}
+      ]
+    }
+  ]
+}

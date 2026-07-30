@@ -1,0 +1,202 @@
+{
+  "case_file_id": "CF-HERO-1",
+  "case_id": "__SET_AT_RUNTIME__",
+  "schema_version": "casefile-1.0",
+  "assembled_at": "__SET_AT_RUNTIME__",
+  "source_coverage": { "sections_total": 13, "sections_populated": 11 },
+  "alert_details": {
+    "alert_id": "ALT-2026-004417",
+    "alert_type": "SANCTIONS_SCREENING",
+    "alert_priority": "CRITICAL",
+    "status": "OPEN",
+    "created_at": "2026-07-22T08:14:00Z",
+    "sla_due_at": "2026-07-31T08:14:00Z",
+    "rule_id": "RULE-SCR-01",
+    "source_system": "TM-CORE",
+    "citation_ids": ["CIT-00001"]
+  },
+  "priority_explanation": {
+    "urgency": {
+      "score": 87.5,
+      "tier": "CRITICAL",
+      "hard_override_code": "SANCTIONS_MATCH",
+      "hard_override_reason": "Confirmed sanctions list match on counterparty Baltica Freight OU (OFAC SDN)",
+      "policy_version": "scoring-2026.07.30-1",
+      "calculated_at": "2026-07-30T02:00:00Z"
+    },
+    "citation_ids": ["CIT-00002"]
+  },
+  "predictive_advisories": [
+    {
+      "prediction_type": "expected_resolution_hours",
+      "prediction_value": 96.0,
+      "sla_margin_hours": -65.8,
+      "band": "AT_RISK",
+      "model_name": "heuristic-fallback",
+      "model_version": "0.1.0",
+      "feature_snapshot_id": "FS-2026-07-30-001",
+      "advisory_only": true,
+      "scored_at": "2026-07-30T02:05:00Z"
+    }
+  ],
+  "customer_profile": {
+    "company_id": "CMP-1042",
+    "legal_name": "Meridian Trade Partners Pte Ltd",
+    "registration_number": "REG-SG-115533",
+    "lei_code": "LEI-549300MERIDIAN042",
+    "kyc_effective_status": "EXPIRED",
+    "kyc_expiry_date": "2026-03-15",
+    "kyc_risk_rating": "HIGH",
+    "client_segment": "CORPORATE",
+    "jurisdiction_code": "SG",
+    "industry": "Wholesale trade / commodities",
+    "citation_ids": ["CIT-00003"]
+  },
+  "counterparty_profiles": [
+    {
+      "company_id": "CMP-3320",
+      "legal_name": "Baltica Freight OU",
+      "jurisdiction_code": "EE",
+      "risk_rating": "PROHIBITED",
+      "sanctions_reference": "OFAC SDN — designation 2025-11-02, program UKRAINE-EO13662",
+      "citation_ids": ["CIT-00021"]
+    },
+    {
+      "company_id": "CMP-5560",
+      "legal_name": "Gulf Horizon FZE",
+      "jurisdiction_code": "AE",
+      "risk_rating": "HIGH",
+      "sanctions_reference": null,
+      "citation_ids": ["CIT-00022"]
+    }
+  ],
+  "transaction_timeline": [
+    {
+      "transaction_id": "TXN-2026-118344",
+      "transaction_ref": "REF-8834412",
+      "initiated_at": "2026-07-21T09:30:00Z",
+      "amount_usd": "1250000.00",
+      "currency_original": "USD",
+      "transaction_type": "WIRE_OUT",
+      "beneficiary_company_id": "CMP-3320",
+      "originating_country": "SG",
+      "destination_country": "EE",
+      "is_cross_border": true,
+      "citation_ids": ["CIT-00017"]
+    },
+    {
+      "transaction_id": "TXN-2026-117902",
+      "transaction_ref": "REF-8790215",
+      "initiated_at": "2026-07-19T14:05:00Z",
+      "amount_usd": "480000.00",
+      "currency_original": "AED",
+      "transaction_type": "WIRE_OUT",
+      "beneficiary_company_id": "CMP-5560",
+      "originating_country": "SG",
+      "destination_country": "AE",
+      "is_cross_border": true,
+      "citation_ids": ["CIT-00018"]
+    },
+    {
+      "transaction_id": "TXN-2026-117610",
+      "transaction_ref": "REF-8761003",
+      "initiated_at": "2026-07-18T08:22:00Z",
+      "amount_usd": "495000.00",
+      "currency_original": "AED",
+      "transaction_type": "WIRE_OUT",
+      "beneficiary_company_id": "CMP-5560",
+      "originating_country": "SG",
+      "destination_country": "AE",
+      "is_cross_border": true,
+      "citation_ids": ["CIT-00019"]
+    }
+  ],
+  "entity_relationships": [
+    {
+      "path_id": "PATH-001",
+      "question": "How is Meridian Trade Partners connected to the sanctioned counterparty?",
+      "derivation": "shortest_path",
+      "graph_workspace": "TEAM_11_USER.TS_GRAPH",
+      "nodes": [
+        { "entity_id": "CMP-1042", "entity_type": "COMPANY", "label": "Meridian Trade Partners Pte Ltd" },
+        { "entity_id": "OWN-2214", "entity_type": "BENEFICIAL_OWNER", "label": "Owner OWN-2214 (PEP)" },
+        { "entity_id": "CMP-3320", "entity_type": "COMPANY", "label": "Baltica Freight OU" }
+      ],
+      "edges": [
+        {
+          "edge_id": "E-88121", "source": "OWN-2214", "target": "CMP-1042",
+          "edge_type": "OWNS", "properties": { "ownership_percentage": "38.00" },
+          "source_table": "COMPANY_BENEFICIAL_OWNERS", "source_record_id": "CBO-77021"
+        },
+        {
+          "edge_id": "E-88350", "source": "OWN-2214", "target": "CMP-3320",
+          "edge_type": "OWNS", "properties": { "ownership_percentage": "51.00" },
+          "source_table": "COMPANY_BENEFICIAL_OWNERS", "source_record_id": "CBO-77188"
+        }
+      ],
+      "citation_id": "CIT-00031"
+    }
+  ],
+  "related_alerts": [
+    { "alert_id": "ALT-2026-003902", "alert_type": "TRANSACTION_PATTERN", "status": "CLOSED_TRUE", "citation_ids": ["CIT-00035"] },
+    { "alert_id": "ALT-2026-002210", "alert_type": "SANCTIONS_SCREENING", "status": "CLOSED_FALSE", "citation_ids": ["CIT-00036"] }
+  ],
+  "policy_context": [
+    {
+      "doc_id": "POL-AML-014",
+      "clause_id": "4.2",
+      "doc_type": "policy",
+      "title": "Sanctions screening escalation",
+      "excerpt": "Any confirmed match against an active sanctions designation must be escalated to senior review within one business day, irrespective of transaction status.",
+      "similarity": 0.83,
+      "effective_date": "2026-01-01",
+      "authority": "authoritative",
+      "citation_ids": ["CIT-00044"]
+    },
+    {
+      "doc_id": "POL-KYC-006",
+      "clause_id": "2.1",
+      "doc_type": "procedure",
+      "title": "Expired KYC handling",
+      "excerpt": "Where customer KYC verification has lapsed, investigators must record the lapse as missing information and must not rely on the expired verification as current.",
+      "similarity": 0.71,
+      "effective_date": "2025-09-01",
+      "authority": "authoritative",
+      "citation_ids": ["CIT-00045"]
+    }
+  ],
+  "historical_case_references": [],
+  "missing_information": [
+    {
+      "field": "customer_profile.kyc_last_reviewed_at",
+      "reason": "KYC verification expired 2026-03-15; no refresh record in KYC-HUB",
+      "severity": "warning"
+    },
+    {
+      "field": "counterparty_profiles[CMP-5560].beneficial_owners",
+      "reason": "Ownership records unavailable for UAE free-zone entity",
+      "severity": "warning"
+    }
+  ],
+  "source_provenance": [
+    { "citation_id": "CIT-00001", "source_type": "sql", "source_id": "RISK_ALERTS", "source_locator": "ALERT_ID=ALT-2026-004417", "source_version": "2026-07-29T21:14:03Z", "retrieved_at": "__SET_AT_RUNTIME__", "region": "APJ", "permission_scope": "fincrime_ops" },
+    { "citation_id": "CIT-00002", "source_type": "sql", "source_id": "PRIORITY_SCORES", "source_locator": "ALERT_ID=ALT-2026-004417;POLICY=scoring-2026.07.30-1", "source_version": "2026-07-30T02:00:00Z", "retrieved_at": "__SET_AT_RUNTIME__", "region": "APJ", "permission_scope": "fincrime_ops" },
+    { "citation_id": "CIT-00003", "source_type": "sql", "source_id": "COMPANIES", "source_locator": "COMPANY_ID=CMP-1042", "source_version": "2026-07-28T18:00:00Z", "retrieved_at": "__SET_AT_RUNTIME__", "region": "APJ", "permission_scope": "fincrime_ops" },
+    { "citation_id": "CIT-00017", "source_type": "sql", "source_id": "TRANSACTIONS", "source_locator": "TRANSACTION_ID=TXN-2026-118344", "source_version": "2026-07-29T21:14:03Z", "retrieved_at": "__SET_AT_RUNTIME__", "region": "APJ", "permission_scope": "fincrime_ops" },
+    { "citation_id": "CIT-00018", "source_type": "sql", "source_id": "TRANSACTIONS", "source_locator": "TRANSACTION_ID=TXN-2026-117902", "source_version": "2026-07-29T21:14:03Z", "retrieved_at": "__SET_AT_RUNTIME__", "region": "APJ", "permission_scope": "fincrime_ops" },
+    { "citation_id": "CIT-00019", "source_type": "sql", "source_id": "TRANSACTIONS", "source_locator": "TRANSACTION_ID=TXN-2026-117610", "source_version": "2026-07-29T21:14:03Z", "retrieved_at": "__SET_AT_RUNTIME__", "region": "APJ", "permission_scope": "fincrime_ops" },
+    { "citation_id": "CIT-00021", "source_type": "sql", "source_id": "SANCTIONS_LISTS", "source_locator": "ENTRY=OFAC-SDN-2025-11-02-BALTICA", "source_version": "2026-07-27T06:00:00Z", "retrieved_at": "__SET_AT_RUNTIME__", "region": "APJ", "permission_scope": "fincrime_ops" },
+    { "citation_id": "CIT-00022", "source_type": "sql", "source_id": "COMPANIES", "source_locator": "COMPANY_ID=CMP-5560", "source_version": "2026-07-28T18:00:00Z", "retrieved_at": "__SET_AT_RUNTIME__", "region": "APJ", "permission_scope": "fincrime_ops" },
+    { "citation_id": "CIT-00031", "source_type": "graph", "source_id": "TS_GRAPH", "source_locator": "PATH=CMP-1042<-OWN-2214->CMP-3320", "source_version": "2026-07-29T21:14:03Z", "retrieved_at": "__SET_AT_RUNTIME__", "region": "APJ", "permission_scope": "fincrime_ops" },
+    { "citation_id": "CIT-00035", "source_type": "sql", "source_id": "RISK_ALERTS", "source_locator": "ALERT_ID=ALT-2026-003902", "source_version": "2026-07-29T21:14:03Z", "retrieved_at": "__SET_AT_RUNTIME__", "region": "APJ", "permission_scope": "fincrime_ops" },
+    { "citation_id": "CIT-00036", "source_type": "sql", "source_id": "RISK_ALERTS", "source_locator": "ALERT_ID=ALT-2026-002210", "source_version": "2026-07-29T21:14:03Z", "retrieved_at": "__SET_AT_RUNTIME__", "region": "APJ", "permission_scope": "fincrime_ops" },
+    { "citation_id": "CIT-00044", "source_type": "vector", "source_id": "POLICY_CHUNKS", "source_locator": "DOC=POL-AML-014;CLAUSE=4.2", "source_version": "2026-01-01", "retrieved_at": "__SET_AT_RUNTIME__", "region": "APJ", "permission_scope": "fincrime_ops" },
+    { "citation_id": "CIT-00045", "source_type": "vector", "source_id": "POLICY_CHUNKS", "source_locator": "DOC=POL-KYC-006;CLAUSE=2.1", "source_version": "2025-09-01", "retrieved_at": "__SET_AT_RUNTIME__", "region": "APJ", "permission_scope": "fincrime_ops" }
+  ],
+  "data_freshness": [
+    { "source": "RISK_ALERTS", "source_updated_at": "2026-07-29T21:14:03Z" },
+    { "source": "TRANSACTIONS", "source_updated_at": "2026-07-29T21:14:03Z" },
+    { "source": "COMPANIES", "source_updated_at": "2026-07-28T18:00:00Z" },
+    { "source": "SANCTIONS_LISTS", "source_updated_at": "2026-07-27T06:00:00Z" }
+  ]
+}

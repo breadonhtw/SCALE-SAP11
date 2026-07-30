@@ -1,0 +1,21 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mock-api",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "uvicorn", "mock_api.app:app", "--port", "8000"],
+      "port": 8000
+    },
+    {
+      "name": "cockpit",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m", "streamlit", "run", "streamlit_app/app.py",
+        "--server.port", "8501", "--server.headless", "true",
+        "--browser.gatherUsageStats", "false"
+      ],
+      "port": 8501
+    }
+  ]
+}

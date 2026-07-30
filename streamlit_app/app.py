@@ -1,7 +1,7 @@
 """TrustSphere RiskOps Copilot — investigator cockpit (ranked queue).
 
 Run:  streamlit run streamlit_app/app.py
-Needs the backend (mock or real) at TRUSTSPHERE_API_BASE_URL.
+Backend (Track A API) at TRUSTSPHERE_API_BASE_URL.
 """
 
 from __future__ import annotations
@@ -26,44 +26,46 @@ try:
     health = api_client.health()
 except Exception:
     st.error("Backend unreachable. Start it with: "
-             "`uvicorn mock_api.app:app --port 8000`")
+             "`uvicorn trustsphere.api.app:app --port 8000`")
     st.stop()
 
 ui.backend_banner(health)
 
-data = api_client.list_alerts(status="open")
-st.subheader(f"Ranked alert queue — {data['total']} open alerts")
-st.caption("Queue order is server-side policy (hard overrides → urgency tier → "
-           f"SLA remaining → score). Scoring policy `{data['policy_version']}` · "
-           f"as of {data['as_of']} UTC")
+data = api_client.queue()
+if data["count"] == 0:
+    st.info("No scored alerts yet — the queue ranks alerts that have been "
+            "through the deterministic scoring engine.")
+    if st.button("Score all alerts now", type="primary"):
+        with st.spinner("Running deterministic urgency scoring on all alerts…"):
+            result = api_client.score_all()
+        st.success(f"Scored {result['scored_count']} alerts.")
+        st.rerun()
+    st.stop()
 
-header = st.columns((1, 5, 6, 3, 2, 4, 3, 3, 2))
-for col, name in zip(header, ("#", "Alert", "Customer", "Tier", "Score",
-                              "SLA", "Complexity", "Advisory", "")):
+st.subheader(f"Ranked alert queue — {data['count']} alerts")
+st.caption("Queue order is server-side policy (hard overrides → urgency tier → "
+           "SLA remaining → score; complexity only as tie-break). "
+           f"Backend `{data['backend']}`")
+
+header = st.columns((1, 6, 3, 2, 4, 3, 2))
+for col, name in zip(header, ("#", "Alert", "Tier", "Score", "SLA",
+                              "Complexity", "")):
     col.markdown(f"**{name}**")
 
-for item in data["items"]:
-    cols = st.columns((1, 5, 6, 3, 2, 4, 3, 3, 2))
-    urgency = item["urgency"]
-    cols[0].write(item["queue_rank"])
-    override = " 🔴" if urgency["hard_override_code"] else ""
-    cols[1].write(f"`{item['alert_id']}`{override}  \n"
-                  f"{item['alert_type']} · {item['status']}")
-    company = item["company"]
-    kyc = " · **KYC EXPIRED**" if company["kyc_effective_status"] == "EXPIRED" else ""
-    cols[2].markdown(f"{company['legal_name']}  \n"
-                     f"{company['jurisdiction_code']} · "
-                     f"KYC risk {company['kyc_risk_rating']}{kyc}")
-    cols[3].markdown(ui.tier_badge(urgency["tier"]))
-    cols[4].write(f"{urgency['score']:.1f}")
-    cols[5].write(ui.sla_text(item["sla"]["due_at"]))
-    cols[6].write(item["complexity"]["band"])
-    advisory = item.get("advisory")
-    cols[7].write(advisory["band"] if advisory else "—")
-    if cols[8].button("Open", key=f"open-{item['alert_id']}"):
-        st.session_state["alert_id"] = item["alert_id"]
+for rank, row in enumerate(data["queue"], start=1):
+    cols = st.columns((1, 6, 3, 2, 4, 3, 2))
+    cols[0].write(rank)
+    override = " 🔴" if row.get("HARD_OVERRIDE_CODE") else ""
+    cols[1].write(f"`{row['ALERT_ID']}`{override}  \n"
+                  f"{row.get('ALERT_TYPE', '?')} · {row.get('STATUS', '?')}")
+    cols[2].markdown(ui.tier_badge(row.get("URGENCY_TIER", "?")))
+    cols[3].write(f"{row.get('URGENCY_SCORE', 0):.1f}")
+    cols[4].write(ui.sla_text(row.get("SLA_DUE_AT")))
+    cols[5].write(f"{row.get('COMPLEXITY_BAND', '?')} "
+                  f"({row.get('COMPLEXITY_POINTS', '?')})")
+    if cols[6].button("Open", key=f"open-{row['ALERT_ID']}"):
+        st.session_state["alert_id"] = row["ALERT_ID"]
         st.switch_page("pages/1_Alert_Detail.py")
 
 st.caption("🔴 = hard override active (tier set by policy override; factor "
-           "breakdown preserved). Advisory column is operational shadow-mode "
-           "output, never part of the urgency score.")
+           "breakdown preserved).")

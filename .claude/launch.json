@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "mock-api",
+      "name": "backend",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "uvicorn", "mock_api.app:app", "--port", "8000"],
+      "runtimeArgs": ["-m", "uvicorn", "trustsphere.api.app:app", "--port", "8000"],
       "port": 8000
     },
     {

@@ -21,6 +21,13 @@ src/trustsphere/domain/alerts.py
 src/trustsphere/domain/cases.py
 src/trustsphere/domain/citations.py
 src/trustsphere/domain/decisions.py
+src/trustsphere/generation/__init__.py
+src/trustsphere/generation/aicore.py
+src/trustsphere/generation/base.py
+src/trustsphere/generation/factory.py
+src/trustsphere/generation/fallback.py
+src/trustsphere/generation/orchestration.py
+src/trustsphere/generation/validation.py
 src/trustsphere/persistence/__init__.py
 src/trustsphere/persistence/base.py
 src/trustsphere/persistence/hana.py

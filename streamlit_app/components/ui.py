@@ -22,8 +22,12 @@ def tier_badge(tier: str) -> str:
     return TIER_BADGE.get(tier, tier)
 
 
-def sla_text(due_at_iso: str) -> str:
-    due = datetime.fromisoformat(due_at_iso.replace("Z", "+00:00"))
+def sla_text(due_at_iso: str | None) -> str:
+    if not due_at_iso:
+        return "—"
+    due = datetime.fromisoformat(str(due_at_iso).replace("Z", "+00:00"))
+    if due.tzinfo is None:
+        due = due.replace(tzinfo=timezone.utc)
     hours = (due - datetime.now(timezone.utc)).total_seconds() / 3600
     if hours < 0:
         return f"BREACHED {abs(hours):.0f}h ago"

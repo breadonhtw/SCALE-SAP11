@@ -1,4 +1,10 @@
-"""Mock backend for Track B development (B1 scope).
+"""DEPRECATED — Track A's real backend replaced this on 2026-07-30.
+
+Use `uvicorn trustsphere.api.app:app --port 8000` (local SQLite fallback or
+HANA per DATA_BACKEND). This mock predates docs/api-contract.md and no longer
+matches it; kept only as a reference for the pre-merge provisional shapes.
+
+Original description: Mock backend for Track B development (B1 scope).
 
 PROVISIONAL SHAPES — docs/api-contract.md is Person A's deliverable and does
 not exist yet. Until it is published and jointly signed off, the shapes served

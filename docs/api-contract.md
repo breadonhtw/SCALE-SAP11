@@ -185,6 +185,22 @@ the real SBPA instance ID here, not a placeholder.
 {"workflow_id": "...", "case_id": "...", "external_instance_id": "SBPA-INST-1", "status": "APPROVED", "started_at": "...", "completed_at": "...", "is_fallback": false}
 ```
 
+### `POST /cases/{case_id}/explanations` — **Track B (implemented in `api/routers/explanations.py`)**
+Body: `{"question": "...?", "task": "explain|narrative", "persist_draft": bool?}`
+(`persist_draft` defaults to true for `narrative`, false for `explain`).
+Runs cited generation over the persisted CaseFile via SAP AI Core
+orchestration (model `gpt-4.1-mini`, live-verified — see capability matrix),
+falling back to the deterministic generator on any AI Core failure. Validates
+citation coverage + numeric fidelity post-generation; unsupported sentences
+are flagged, never silently dropped. Narrative tasks persist through the same
+draft path as `POST /cases/{id}/drafts` (DRAFT_CREATED audit event included).
+`422 CASE_FILE_REQUIRED` when no CaseFile has been assembled yet.
+Response: `{"backend", "explanation": {task, content, sentences: [{text,
+citation_ids, kind, supported}], generation: {generation_id,
+generation_backend: "sap_ai_core|fallback", model_name, prompt_version,
+usage, request_id}, validation: {citation_coverage, unsupported_sentences,
+numeric_mismatches}}, "draft": draft | null}`.
+
 ## Ownership boundary (who builds what)
 
 | Concern | Owner | Notes |

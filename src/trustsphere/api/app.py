@@ -17,7 +17,7 @@ import logging
 from fastapi import FastAPI
 
 from trustsphere.api.errors import register_error_handlers
-from trustsphere.api.routers import alerts, cases, health
+from trustsphere.api.routers import alerts, cases, explanations, health
 from trustsphere.config import get_settings
 
 
@@ -48,6 +48,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(alerts.router)
     app.include_router(cases.router)
+    app.include_router(explanations.router)  # Track B generation (B2)
 
     @app.get("/")
     def root():

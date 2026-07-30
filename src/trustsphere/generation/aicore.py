@@ -88,13 +88,20 @@ class AICoreClient:
         return resources[0]["deploymentUrl"]
 
     def v2_completion(self, config: dict, placeholder_values: dict,
-                      messages_history: list[dict] | None = None) -> dict:
+                      messages_history: list[dict] | None = None,
+                      config_ref: dict | None = None) -> dict:
         url = self.orchestration_deployment_url().rstrip("/") + "/v2/completion"
-        body: dict = {"config": config, "placeholder_values": placeholder_values}
+        # config_ref points at a saved orchestration configuration in AI Core
+        # (governed/versioned in the tenant); inline config is the default.
+        body: dict = ({"config_ref": config_ref}
+                      if config_ref else {"config": config})
+        body["placeholder_values"] = placeholder_values
         if messages_history:
             body["messages_history"] = messages_history
         resp = requests.post(url, json=body, headers=self._headers(), timeout=180)
-        if resp.status_code == 429:
+        if resp.status_code in (429, 503):
+            # 429: rate limit. 503: transient filter-service flakiness observed
+            # live (Llama Guard 3-8B "response could not be parsed").
             retry_after = int(resp.headers.get("Retry-After", "5"))
             time.sleep(min(retry_after, 30))
             resp = requests.post(url, json=body, headers=self._headers(), timeout=180)

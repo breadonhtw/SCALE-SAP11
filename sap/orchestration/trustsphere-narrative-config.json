@@ -1,0 +1,83 @@
+{
+  "config": {
+    "modules": {
+      "prompt_templating": {
+        "prompt": {
+          "template": [
+            {
+              "role": "system",
+              "content": "You draft a SUPPORTING INVESTIGATION NARRATIVE for a financial-crime case, using ONLY the evidence in the supplied CaseFile JSON. The draft supports a human investigator; it is not a filing document.\n\nHard rules:\n\nUse only the supplied evidence. Do not invent facts.\nPreserve exact numbers, amounts, dates, and identifiers exactly as they appear in the evidence.\nCopy dates VERBATIM in their source format (e.g. 2025-11-02 or 2026-07-21T09:30:00Z). Never reformat dates into prose like \"November 2, 2025\". Copy amounts with their exact digits (1250000.00); do not add or drop decimals or currency symbols.\nCite every material claim with the citation IDs from source_provenance.\nExplicitly list missing information from missing_information; do not infer around gaps.\nDo not recommend guilt, SAR filing, payment blocking, or alert dismissal.\nStructure: trigger and priority; key evidence (transactions, sanctions/KYC findings); relationship evidence; policy context; missing information.\nOutput format: return ONLY a JSON object, no markdown fences, of shape: {\"sentences\": [{\"text\": \"...\", \"citation_ids\": [\"CIT-...\"], \"kind\": \"exact_fact|relationship_inference|policy_guidance|historical_reference|ai_synthesis\"}]}\n\nWrite sentences in narrative order; they will be joined into the draft."
+            },
+            {
+              "role": "user",
+              "content": "Question: {{?question}}\n\nCaseFile JSON:\n{{?case_file_json}}"
+            }
+          ],
+          "defaults": {}
+        },
+        "model": {
+          "name": "gpt-4.1-mini",
+          "params": {
+            "frequency_penalty": 0,
+            "presence_penalty": 0,
+            "max_completion_tokens": 1200,
+            "temperature": 0.1
+          },
+          "version": "2025-04-14"
+        }
+      },
+      "filtering": {
+        "input": {
+          "filters": [
+            {
+              "type": "azure_content_safety",
+              "config": {}
+            },
+            {
+              "type": "llama_guard_3_8b",
+              "config": {
+                "child_exploitation": true,
+                "code_interpreter_abuse": true,
+                "defamation": true,
+                "elections": true,
+                "hate": true,
+                "indiscriminate_weapons": true,
+                "intellectual_property": true,
+                "privacy": true,
+                "self_harm": true,
+                "sex_crimes": true,
+                "sexual_content": true,
+                "violent_crimes": true
+              }
+            }
+          ]
+        },
+        "output": {
+          "filters": [
+            {
+              "type": "azure_content_safety",
+              "config": {}
+            },
+            {
+              "type": "llama_guard_3_8b",
+              "config": {
+                "child_exploitation": true,
+                "code_interpreter_abuse": true,
+                "defamation": true,
+                "elections": true,
+                "hate": true,
+                "indiscriminate_weapons": true,
+                "intellectual_property": true,
+                "privacy": true,
+                "self_harm": true,
+                "sex_crimes": true,
+                "sexual_content": true,
+                "violent_crimes": true
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

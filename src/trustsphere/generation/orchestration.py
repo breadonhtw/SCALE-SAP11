@@ -49,6 +49,31 @@ def _load_prompt(task: Task) -> str:
     return (PROMPTS_DIR / f"{PROMPT_VERSIONS[task]}.md").read_text(encoding="utf-8")
 
 
+# Content-filtering module mirrored from the team's portal-authored
+# configuration (sap/orchestration/trustsphere-narrative-config.json,
+# exported from AI Launchpad Generative AI -> Orchestration and test-run
+# against fincrime content 2026-07-30). Categories that collide with
+# legitimate financial-crime evidence (non_violent_crimes,
+# specialized_advice) are deliberately not enabled.
+_LLAMA_GUARD_CATEGORIES = {
+    "child_exploitation": True, "code_interpreter_abuse": True,
+    "defamation": True, "elections": True, "hate": True,
+    "indiscriminate_weapons": True, "intellectual_property": True,
+    "privacy": True, "self_harm": True, "sex_crimes": True,
+    "sexual_content": True, "violent_crimes": True,
+}
+FILTERING_MODULE = {
+    "input": {"filters": [
+        {"type": "azure_content_safety", "config": {}},
+        {"type": "llama_guard_3_8b", "config": _LLAMA_GUARD_CATEGORIES},
+    ]},
+    "output": {"filters": [
+        {"type": "azure_content_safety", "config": {}},
+        {"type": "llama_guard_3_8b", "config": _LLAMA_GUARD_CATEGORIES},
+    ]},
+}
+
+
 def _parse_sentences(text: str) -> list[Sentence]:
     # Models occasionally wrap JSON in fences despite instructions.
     cleaned = re.sub(r"^```(?:json)?|```$", "", text.strip(), flags=re.MULTILINE).strip()
@@ -90,23 +115,49 @@ class OrchestrationGenerator:
                         "version": "latest",
                         "params": {"max_completion_tokens": 1200, "temperature": 0.1},
                     },
-                }
+                },
+                "filtering": FILTERING_MODULE,
             }
         }
+
+    @staticmethod
+    def _saved_config_ref(task: Task) -> dict | None:
+        """Saved orchestration configuration in AI Core, if configured.
+
+        Env: TRUSTSPHERE_ORCH_CONFIG_ID_EXPLAIN / _NARRATIVE — the configuration
+        IDs from AI Launchpad (Generative AI -> Orchestration). When set, the
+        prompt/model recipe is governed in the tenant instead of sent inline.
+        """
+        config_id = os.environ.get(f"TRUSTSPHERE_ORCH_CONFIG_ID_{task.upper()}")
+        return {"id": config_id} if config_id else None
 
     def generate(self, task: Task, case_file: dict,
                  question: str | None = None) -> GenerationResult:
         placeholders = {"case_file_json": json.dumps(case_file, ensure_ascii=False)}
         if question:
             placeholders["question"] = question
-        try:
-            resp = self.client.v2_completion(self._config(task, True), placeholders)
-        except AICoreError as exc:
-            # Some providers reject response_format; downgrade to prompt-only JSON.
-            if exc.status == 400 and "response_format" in str(exc):
-                resp = self.client.v2_completion(self._config(task, False), placeholders)
-            else:
-                raise
+        config_ref = self._saved_config_ref(task)
+        resp = None
+        if config_ref:
+            try:
+                resp = self.client.v2_completion({}, placeholders,
+                                                 config_ref=config_ref)
+                _parse_sentences(resp["final_result"]["choices"][0]["message"]["content"])
+            except (AICoreError, json.JSONDecodeError, KeyError):
+                # Saved config unusable (bad ref, or output not parseable JSON
+                # because saved configs lack our strict json_schema response
+                # format) -> fall through to the inline recipe.
+                resp = None
+        if resp is None:
+            try:
+                resp = self.client.v2_completion(self._config(task, True), placeholders)
+            except AICoreError as exc:
+                # Some providers reject response_format; downgrade to prompt-only JSON.
+                if exc.status == 400 and "response_format" in str(exc):
+                    resp = self.client.v2_completion(self._config(task, False),
+                                                     placeholders)
+                else:
+                    raise
         final = resp["final_result"]
         message = final["choices"][0]["message"]["content"]
         return GenerationResult(

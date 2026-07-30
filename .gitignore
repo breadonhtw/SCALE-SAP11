@@ -7,6 +7,10 @@
 __pycache__/
 *.pyc
 .venv/
+.pytest_cache/
+
+# Local SQLite fallback DB (CLAUDE.md §18 dev/demo only, never the record of truth)
+data/
 
 # macOS
 .DS_Store

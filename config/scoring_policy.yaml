@@ -1,0 +1,190 @@
+# TrustSphere deterministic regulatory-urgency policy
+#
+# These weights, thresholds, and override conditions are INITIAL POLICY
+# ASSUMPTIONS (CLAUDE.md §9), not discovered truth. They require Financial
+# Crime policy approval before any production use. Changing this file bumps
+# `policy_version`, which is stamped onto every PRIORITY_SCORES /
+# ALERT_FACTORS row so historical scores remain reproducible.
+#
+# Scale: 0-100. urgency_score = sum(normalised_factor * weight).
+# Deterministic only — no ML, no LLM input feeds this file's calculations.
+
+policy_version: "2026-07-30.1"
+
+factors:
+  # Weights must sum to 1.0 — enforced by scoring/policy.py at load time.
+  typology_severity:
+    weight: 0.25
+    description: >
+      Severity of the monitoring rule/alert typology that fired
+      (RISK_ALERTS.ALERT_TYPE, RISK_ALERTS.ALERT_PRIORITY).
+    source: "RISK_ALERTS.ALERT_TYPE, RISK_ALERTS.ALERT_PRIORITY"
+
+  entity_risk:
+    weight: 0.20
+    description: >
+      Customer/counterparty risk rating and KYC posture
+      (COMPANY_RISK_PROFILES.COMPOSITE_RISK_SCORE, COMPANIES.KYC_EFFECTIVE_STATUS,
+      COMPANIES.KYC_RISK_RATING).
+    source: "COMPANY_RISK_PROFILES.COMPOSITE_RISK_SCORE, COMPANIES.KYC_EFFECTIVE_STATUS, COMPANIES.KYC_RISK_RATING"
+
+  jurisdiction_exposure:
+    weight: 0.20
+    description: >
+      Country/regulatory exposure of the entity and the transaction corridor
+      (COMPANY_RISK_PROFILES.COUNTRY_RISK_SCORE, COMPANY_RISK_PROFILES.RISK_TIER,
+      TRANSACTIONS.IS_CROSS_BORDER).
+    source: "COMPANY_RISK_PROFILES.COUNTRY_RISK_SCORE, COMPANY_RISK_PROFILES.RISK_TIER, TRANSACTIONS.IS_CROSS_BORDER"
+
+  sla_age_proximity:
+    weight: 0.20
+    description: >
+      Alert age and proximity to SLA breach
+      (RISK_ALERTS.CREATED_AT, RISK_ALERTS.SLA_DUE_AT, RISK_ALERTS.SLA_BREACHED_DERIVED).
+    source: "RISK_ALERTS.CREATED_AT, RISK_ALERTS.SLA_DUE_AT, RISK_ALERTS.SLA_BREACHED_DERIVED"
+
+  transaction_materiality:
+    weight: 0.15
+    description: >
+      Size and velocity of the triggering transaction relative to the
+      company's own baseline (TRANSACTIONS.AMOUNT_USD vs
+      TRANSACTION_BASELINES.AVG_AMOUNT_USD / MAX_AMOUNT_USD).
+    source: "TRANSACTIONS.AMOUNT_USD, TRANSACTION_BASELINES.AVG_AMOUNT_USD, TRANSACTION_BASELINES.MAX_AMOUNT_USD"
+
+# Normalisation curves — piecewise-linear breakpoints mapping a raw value to
+# a 0-100 normalised score. `default` is used when the raw input is missing
+# (and is intentionally conservative, not zero, so an unscoreable factor
+# doesn't silently suppress urgency — the gap is instead surfaced via the
+# factor's reason code and CaseFile.missing_information).
+normalisation:
+  typology_severity:
+    # ALERT_PRIORITY values are read from the tenant at score time; this map
+    # is intentionally permissive (falls back to `default`) until the exact
+    # ALERT_PRIORITY vocabulary is confirmed against a live query.
+    by_alert_priority:
+      CRITICAL: 100
+      HIGH: 80
+      MEDIUM: 50
+      LOW: 25
+    default: 50
+    missing_reason: "ALERT_PRIORITY not present or unrecognised on RISK_ALERTS row"
+
+  entity_risk:
+    # Linear scale on COMPANY_RISK_PROFILES.COMPOSITE_RISK_SCORE (already 0-100
+    # per source; profiled range confirmed in [0,100]). KYC status applies an
+    # additive penalty on top, capped at 100.
+    composite_risk_score_passthrough: true
+    kyc_status_penalty:
+      EXPIRED: 20
+      REJECTED: 30
+      PENDING: 10
+      VERIFIED: 0
+    default: 50
+    missing_reason: "COMPANY_RISK_PROFILES row not found for this COMPANY_ID"
+
+  jurisdiction_exposure:
+    country_risk_score_passthrough: true
+    risk_tier_floor:
+      # A RISK_TIER of HIGH/CRITICAL sets a floor under the country score so
+      # a stale/low COUNTRY_RISK_SCORE cannot undercut a tier the tenant has
+      # already assigned.
+      CRITICAL: 90
+      HIGH: 70
+      MEDIUM: 40
+      LOW: 0
+    cross_border_bonus: 10
+    default: 40
+    missing_reason: "COMPANY_RISK_PROFILES row not found for this COMPANY_ID"
+
+  sla_age_proximity:
+    # Piecewise on hours-remaining-to-SLA_DUE_AT (negative = already breached).
+    breakpoints_hours_remaining:
+      - {at_or_below: -1, score: 100}     # already breached
+      - {at_or_below: 24, score: 90}
+      - {at_or_below: 72, score: 70}
+      - {at_or_below: 168, score: 45}
+      - {above: 168, score: 20}
+    default: 50
+    missing_reason: "SLA_DUE_AT or CREATED_AT missing on RISK_ALERTS row"
+
+  transaction_materiality:
+    # Ratio of triggering AMOUNT_USD to the company's own AVG_AMOUNT_USD
+    # baseline. Ratio-based so it is scale-invariant across company sizes.
+    ratio_breakpoints:
+      - {at_or_below: 1.0, score: 15}
+      - {at_or_below: 3.0, score: 45}
+      - {at_or_below: 8.0, score: 75}
+      - {above: 8.0, score: 100}
+    default: 40
+    missing_reason: "TRANSACTION_BASELINES row not found or AMOUNT_USD missing"
+
+tiers:
+  # Thresholds are inclusive lower bounds on urgency_score (0-100).
+  - tier: CRITICAL
+    min_score: 85
+  - tier: HIGH
+    min_score: 65
+  - tier: MEDIUM
+    min_score: 40
+  - tier: LOW
+    min_score: 0
+
+hard_overrides:
+  # Each override is a named predicate evaluated against the populated
+  # AlertFactorInputs. If the underlying field could not be retrieved
+  # (schema not yet confirmed against the live tenant — see
+  # docs/capability-matrix.md), the override does NOT fire; the gap is
+  # recorded as a caveat instead of guessed. Order matters: first match wins.
+  - code: SANCTIONS_MATCH
+    field: sanctions_match
+    equals: true
+    forced_tier: CRITICAL
+    reason: "Company, counterparty, or beneficial owner matched an active SANCTIONS_LISTS entry"
+
+  - code: TERRORIST_FINANCING_INDICATOR
+    field: terrorist_financing_flag
+    equals: true
+    forced_tier: CRITICAL
+    reason: "Alert typology indicates a terrorist-financing pattern"
+
+  - code: IMMINENT_SLA_BREACH
+    field: hours_remaining_to_sla
+    at_or_below: 4
+    forced_tier: CRITICAL
+    reason: "Fewer than 4 hours remain before SLA breach (or already breached)"
+
+  - code: RESTRICTED_CUSTOMER
+    field: restricted_customer_flag
+    equals: true
+    forced_tier: CRITICAL
+    reason: "Customer is flagged as previously exited or restricted"
+
+  - code: REPEAT_ESCALATED_ALERT
+    field: has_prior_escalated_case
+    equals: true
+    forced_tier: HIGH
+    reason: "Company has a prior COMPLIANCE_CASES record linked through CASE_ALERTS"
+
+complexity:
+  # Independent of urgency — supports staffing/sequencing, never queue rank
+  # on its own (CLAUDE.md §9 "Queue policy").
+  weights:
+    entity_count: 1
+    jurisdiction_count: 2
+    missing_kyc_count: 2
+    source_system_count: 1
+    related_alert_count: 2
+    transaction_volume_band: 1   # 0-3, banded from transaction count in window
+  bands:
+    - band: LOW
+      max_points: 4
+    - band: MEDIUM
+      max_points: 9
+    - band: HIGH
+      max_points: 15
+    - band: VERY_HIGH
+      max_points: 999
+
+queue:
+  ageing_safeguard_days: 10        # alerts older than this get a queue-position floor bump
+  qc_sample_rate: 0.02             # fraction of low-ranked alerts force-sampled into review

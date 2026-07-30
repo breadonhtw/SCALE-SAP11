@@ -22,6 +22,15 @@ def tier_badge(tier: str) -> str:
     return TIER_BADGE.get(tier, tier)
 
 
+def _humanise_hours(hours: float) -> str:
+    days = hours / 24
+    if hours < 48:
+        return f"{hours:.0f}h"
+    if days < 90:
+        return f"{days:.0f}d"
+    return f"{days / 365.25:.1f}y"
+
+
 def sla_text(due_at_iso: str | None) -> str:
     if not due_at_iso:
         return "—"
@@ -30,10 +39,8 @@ def sla_text(due_at_iso: str | None) -> str:
         due = due.replace(tzinfo=timezone.utc)
     hours = (due - datetime.now(timezone.utc)).total_seconds() / 3600
     if hours < 0:
-        return f"BREACHED {abs(hours):.0f}h ago"
-    if hours < 48:
-        return f"{hours:.0f}h remaining"
-    return f"{hours / 24:.1f}d remaining"
+        return f"BREACHED {_humanise_hours(abs(hours))} ago"
+    return f"{_humanise_hours(hours)} remaining"
 
 
 def backend_banner(health: dict) -> None:

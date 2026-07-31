@@ -73,7 +73,8 @@ if decided_on_page:
     tiles[2].metric("Decided on this page", decided_on_page)
 
 TIER_ORDER = ("CRITICAL", "HIGH", "MEDIUM", "LOW")
-COMPLEXITY_ORDER = ("CRITICAL", "HIGH", "MEDIUM", "LOW")
+# ComplexityBand values (domain/alerts.py) — there is no CRITICAL band
+COMPLEXITY_ORDER = ("VERY_HIGH", "HIGH", "MEDIUM", "LOW")
 tier_counts = {t: 0 for t in TIER_ORDER}
 complexity_counts = {c: 0 for c in COMPLEXITY_ORDER}
 type_counts: dict[str, int] = {}

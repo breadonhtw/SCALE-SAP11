@@ -8,9 +8,10 @@ from pathlib import Path
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from components import api_client, ui  # noqa: E402
+from components import api_client, charts, theme, ui  # noqa: E402
 
-st.set_page_config(page_title="Alert Detail", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="Alert Detail", layout="wide")
+theme.inject()
 
 alert_id = st.session_state.get("alert_id") or st.query_params.get("alert_id")
 if not alert_id:
@@ -25,36 +26,38 @@ if score is None:
     score = api_client.score_alert(alert_id)["score"]
 prediction = detail["predictive_sla"]
 
-st.page_link("app.py", label="← Back to queue")
+st.page_link("app.py", label="Back to queue", icon=ui.ICON_BACK)
 st.title(f"Alert {alert['alert_id']}")
+ui.stepper(1)
 st.markdown(f"{ui.tier_badge(score['urgency_tier'])} &nbsp; "
-            f"**{alert.get('alert_type', '?')}** · {alert.get('status', '?')} · "
-            f"source priority {alert.get('alert_priority', '?')} · "
-            f"backend `{detail['backend']}`")
+            f"**{alert.get('alert_type', '?')}** · {alert.get('status', '?')}",
+            unsafe_allow_html=True)
 
 override = score.get("hard_override")
 if override:
     st.error(f"**Hard override: {override['code']}** (forces tier "
              f"{override['forced_tier']}) — {override['reason']}  \n"
              "The override sets the tier; the factor breakdown below is preserved.",
-             icon="🔴")
+             icon=ui.ICON_OVERRIDE)
 
 left, right = st.columns((3, 2))
 
 with left:
-    st.subheader(f"Regulatory urgency {score['urgency_score']:.1f} / 100")
-    st.caption(f"Deterministic, versioned policy `{score['policy_version']}` · "
-               f"calculated {ui.fmt_ts(score['calculated_at'])}")
-    ui.table(
-        [{"Factor": f["factor_code"].replace("_", " ").title(),
-          "Raw value": str(f.get("raw_value")),
-          "Normalised (0-100)": f["normalised_value"],
-          "Weight": f["weight"],
-          "Points": f["weighted_points"],
-          "Reason code": f"`{f['reason_code']}`"}
-         for f in score["factors"]])
-    if score.get("caveats"):
-        st.caption("Caveats: " + " · ".join(score["caveats"]))
+    st.subheader(f"Regulatory urgency {score['urgency_score']:.1f} / 100",
+                help=f"Deterministic, versioned policy `{score['policy_version']}` · "
+                     f"calculated {ui.fmt_ts(score['calculated_at'])}")
+    charts.hbar_chart(
+        [(f["factor_code"].replace("_", " ").title(), f["weighted_points"])
+         for f in score["factors"]], color="blue", unit=" pts")
+    with st.expander("Exact factor values"):
+        ui.table(
+            [{"Factor": f["factor_code"].replace("_", " ").title(),
+              "Raw value": str(f.get("raw_value")),
+              "Points": f["weighted_points"],
+              "Reason code": f"`{f['reason_code']}`"}
+             for f in score["factors"]])
+        if score.get("caveats"):
+            st.caption("Caveats: " + " · ".join(score["caveats"]))
 
 with right:
     st.subheader("SLA")
@@ -69,21 +72,18 @@ with right:
         st.caption("Not yet predicted for this alert.")
     if prediction:
         pred = {k.lower(): v for k, v in prediction.items()}
-        st.info(pred.get("label") or ui.ADVISORY_LABEL, icon="🔬")
+        st.info(pred.get("label") or ui.ADVISORY_LABEL, icon=ui.ICON_ADVISORY)
         st.metric(pred.get("prediction_type", "prediction"),
-                  f"{float(pred.get('prediction_value', 0)):.1f}h")
-        st.caption(f"Model `{pred.get('model_name')} "
-                   f"{pred.get('model_version')}` · advisory only — never part "
-                   "of the urgency score")
+                  f"{float(pred.get('prediction_value', 0)):.1f}h",
+                  help=f"Model `{pred.get('model_name')} {pred.get('model_version')}`")
 
-    st.subheader("Complexity (operational, not urgency)")
+    st.subheader("Complexity", help="Operational effort estimate — not urgency")
     st.write(f"**{score['complexity_band']}** "
              f"(points {score['complexity_points']})")
 
     st.subheader("Customer")
     st.write(f"Company `{alert.get('company_id') or '—'}` · "
              f"transaction `{alert.get('transaction_id') or '—'}`")
-    st.caption("Full customer profile appears in the assembled case file.")
 
 st.divider()
 if st.button("Assemble case file", type="primary"):

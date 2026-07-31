@@ -16,11 +16,11 @@ import streamlit as st
 _HERE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_HERE))
 sys.path.insert(0, str(_HERE.parent / "src"))
-from components import api_client, ui  # noqa: E402
+from components import api_client, theme, ui  # noqa: E402
 from trustsphere.assistant import AssistantLoop  # noqa: E402
 
-st.set_page_config(page_title="Investigation Assistant", page_icon="🛡️",
-                   layout="wide")
+st.set_page_config(page_title="Investigation Assistant", layout="wide")
+theme.inject()
 
 st.title("Investigation Assistant")
 st.caption("**TrustSphere Financial Crime Investigation Agent — custom agent "
@@ -47,22 +47,14 @@ if "assistant_api_messages" not in st.session_state:
     st.session_state["assistant_api_messages"] = []
     st.session_state["assistant_display"] = []
 
-# First-run onboarding (Google PAIR formula; MS first-run: capabilities +
-# output-quality expectations). Shown only while the conversation is empty.
+# First-run onboarding, shown only while the conversation is empty.
 if not st.session_state["assistant_display"]:
     with st.container(border=True):
         st.markdown(
-            "**What this agent does:** explains why an alert is prioritised, "
-            "assembles the evidence case file, drafts cited narratives, and "
-            "routes cases to human review.\n\n"
-            "**What it can't do:** dismiss, close, file, block, or decide — "
-            "those actions don't exist in its tools; they happen on the "
-            "Review & Decide page, by you, with attestation.\n\n"
-            "**What to expect:** every factual answer is grounded in tool "
-            "results with citation ids you can verify; it does not learn "
-            "from your actions.\n\n"
-            "**You help by** asking about specific alerts or cases and "
-            "verifying citations before relying on a draft.")
+            "Explains, assembles evidence, and drafts narratives — grounded "
+            "in citations you can verify. It can't dismiss, file, block, or "
+            "decide; that stays on the Review & Decide page, with your "
+            "attestation.")
 
 alert_id = st.session_state.get("alert_id")
 suggestion = None
@@ -77,7 +69,9 @@ for item in st.session_state["assistant_display"]:
     with st.chat_message(item["role"]):
         st.markdown(item["text"])
         for ev in item.get("tool_events", []):
-            with st.expander(f"🔧 {ev['name']}({', '.join(f'{k}={v}' for k, v in ev['arguments'].items())})"):
+            with st.expander(f"Tool call — {ev['name']}("
+                             f"{', '.join(f'{k}={v}' for k, v in ev['arguments'].items())})",
+                             icon=ui.ICON_TOOL):
                 st.code(ev["result_summary"], language="json")
         if item.get("meta"):
             st.caption(item["meta"])
@@ -99,10 +93,12 @@ if prompt:
                                prompt)
         st.markdown(turn.text)
         for ev in turn.tool_events:
-            with st.expander(f"🔧 {ev.name}({', '.join(f'{k}={v}' for k, v in ev.arguments.items())})"):
+            with st.expander(f"Tool call — {ev.name}("
+                             f"{', '.join(f'{k}={v}' for k, v in ev.arguments.items())})",
+                             icon=ui.ICON_TOOL):
                 st.code(ev.result_summary, language="json")
-        meta = (f"model `{turn.model_name}` · {turn.total_tokens} tokens · "
-                f"{len(turn.tool_events)} tool call(s) · prompt assistant-1.0")
+        meta = (f"{len(turn.tool_events)} tool call(s) · model `{turn.model_name}` · "
+                f"{turn.total_tokens} tokens")
         st.caption(meta)
     st.session_state["assistant_api_messages"] = turn.messages
     st.session_state["assistant_display"].append({

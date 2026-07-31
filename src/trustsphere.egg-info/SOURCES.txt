@@ -13,7 +13,11 @@ src/trustsphere/api/schemas.py
 src/trustsphere/api/routers/__init__.py
 src/trustsphere/api/routers/alerts.py
 src/trustsphere/api/routers/cases.py
+src/trustsphere/api/routers/explanations.py
 src/trustsphere/api/routers/health.py
+src/trustsphere/assistant/__init__.py
+src/trustsphere/assistant/loop.py
+src/trustsphere/assistant/tools.py
 src/trustsphere/config/__init__.py
 src/trustsphere/config/settings.py
 src/trustsphere/domain/__init__.py
@@ -48,3 +52,5 @@ src/trustsphere/scoring/policy.py
 src/trustsphere/services/__init__.py
 src/trustsphere/services/audit.py
 src/trustsphere/services/idempotency.py
+src/trustsphere/workflows/__init__.py
+src/trustsphere/workflows/sbpa.py

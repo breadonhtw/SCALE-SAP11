@@ -1,0 +1,13 @@
+# SAP Fiori Horizon palette (primary blue #0070F2 confirmed against SAP's
+# design-system docs) on a deep navy base. This is the *robust* layer of the
+# theme — native Streamlit theming, not CSS injection, so it always applies
+# even if a browser blocks injected styles. components/theme.py layers the
+# pixel-art chrome (borders, shadows, pixel font) on top of this base.
+
+[theme]
+base = "dark"
+primaryColor = "#0070F2"
+backgroundColor = "#001E50"
+secondaryBackgroundColor = "#0A3D75"
+textColor = "#F5F7FA"
+font = "monospace"

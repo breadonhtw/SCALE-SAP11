@@ -12,15 +12,16 @@ from pathlib import Path
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from components import api_client, ui  # noqa: E402
+from components import api_client, charts, theme, ui  # noqa: E402
 
-st.set_page_config(page_title="TrustSphere RiskOps Copilot",
-                   page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="TrustSphere RiskOps Copilot", layout="wide")
+theme.inject()
 
 st.title("TrustSphere RiskOps Copilot")
 st.caption("Rules determine regulatory urgency. Predictive AI forecasts operational "
            "risk. HybridRAG establishes context. Generative AI explains and drafts. "
            "**Humans decide.**")
+ui.stepper(0)
 
 try:
     health = api_client.health()
@@ -47,11 +48,21 @@ if total == 0:
 
 pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
 
+
+@st.cache_data(ttl=30)
+def _full_queue(n: int) -> list[dict]:
+    """One extra fetch of the whole scored queue, cached briefly, purely
+    for the aggregate charts below — the paginated table above still drives
+    its own request so opening a page never waits on this."""
+    return api_client.queue(limit=n, offset=0)["queue"]
+
+
+full_queue = _full_queue(total)
+
 # Hero KPI strip (team-level only — no individual metrics). Non-zero-only
 # rendering per NN/g salience-by-removal; oldest breach from rank #1, which
 # the queue policy guarantees is the longest-breached alert.
-rank1 = api_client.queue(limit=1, offset=0)["queue"][0] if page else \
-    (data["queue"][0] if data["queue"] else None)
+rank1 = full_queue[0] if full_queue else None
 decided_on_page = sum(1 for r in data["queue"] if r.get("CASE_STATUS"))
 tiles = st.columns(3)
 tiles[0].metric("Open alerts", f"{total:,}")
@@ -61,16 +72,62 @@ if rank1:
 if decided_on_page:
     tiles[2].metric("Decided on this page", decided_on_page)
 
-st.subheader(f"Ranked alert queue — {total:,} open alerts")
+TIER_ORDER = ("CRITICAL", "HIGH", "MEDIUM", "LOW")
+COMPLEXITY_ORDER = ("CRITICAL", "HIGH", "MEDIUM", "LOW")
+tier_counts = {t: 0 for t in TIER_ORDER}
+complexity_counts = {c: 0 for c in COMPLEXITY_ORDER}
+type_counts: dict[str, int] = {}
+age_buckets = {"< 30d": 0, "30–90d": 0, "90d–1y": 0, "1–2y": 0, "2y+": 0}
+for r in full_queue:
+    t = r.get("URGENCY_TIER")
+    if t in tier_counts:
+        tier_counts[t] += 1
+    c = r.get("COMPLEXITY_BAND")
+    if c in complexity_counts:
+        complexity_counts[c] += 1
+    a_type = r.get("ALERT_TYPE") or "UNKNOWN"
+    type_counts[a_type] = type_counts.get(a_type, 0) + 1
+    days = ui.sla_breach_days(r.get("SLA_DUE_AT"))
+    if days is None:
+        continue
+    elif days < 30:
+        age_buckets["< 30d"] += 1
+    elif days < 90:
+        age_buckets["30–90d"] += 1
+    elif days < 365:
+        age_buckets["90d–1y"] += 1
+    elif days < 730:
+        age_buckets["1–2y"] += 1
+    else:
+        age_buckets["2y+"] += 1
+type_counts_sorted = sorted(type_counts.items(), key=lambda kv: -kv[1])[:8]
+
+st.subheader("Queue at a glance")
+row1_l, row1_r = st.columns(2)
+with row1_l:
+    st.caption("By tier")
+    charts.hbar_chart(list(tier_counts.items()), color="blue")
+with row1_r:
+    st.caption("By alert type")
+    charts.hbar_chart(type_counts_sorted, color="violet")
+row2_l, row2_r = st.columns(2)
+with row2_l:
+    st.caption("By complexity")
+    charts.hbar_chart(list(complexity_counts.items()), color="green")
+with row2_r:
+    st.caption("Backlog age", help="Time past each alert's SLA due date")
+    charts.hbar_chart(list(age_buckets.items()), color="gold")
+
+st.subheader(f"Ranked alert queue — {total:,} open alerts",
+            help="Order: hard overrides → urgency tier → SLA remaining → "
+                 "score. Complexity is a tie-break only.")
 nav_l, nav_mid, nav_r = st.columns((1, 4, 1))
 if nav_l.button("← Prev", disabled=page == 0):
     st.session_state["queue_page"] = page - 1
     st.rerun()
 nav_mid.caption(
     f"Showing ranks {page * PAGE_SIZE + 1:,}–{page * PAGE_SIZE + data['count']:,} "
-    f"of {total:,} (page {page + 1}/{pages}). Queue order is server-side policy "
-    "(hard overrides → urgency tier → SLA remaining → score; complexity only "
-    f"as tie-break). Backend `{data['backend']}`")
+    f"of {total:,} (page {page + 1}/{pages})")
 if nav_r.button("Next →", disabled=page >= pages - 1):
     st.session_state["queue_page"] = page + 1
     st.rerun()
@@ -86,20 +143,20 @@ DECIDED_STATUSES = {"ESCALATED": "escalated", "RETURNED_FOR_EDIT": "returned",
 for rank, row in enumerate(data["queue"], start=page * PAGE_SIZE + 1):
     cols = st.columns((1, 6, 3, 2, 4, 3, 2))
     cols[0].write(rank)
-    # Status encodings: colour + text + shape (IBM Carbon: never colour alone)
-    override = " :red-badge[🔴 override]" if row.get("HARD_OVERRIDE_CODE") else ""
+    # Status encodings: colour + explicit text (IBM Carbon: never colour alone)
+    override = (" " + theme.chip("Override", "red")
+                if row.get("HARD_OVERRIDE_CODE") else "")
     decided = DECIDED_STATUSES.get(row.get("CASE_STATUS") or "")
-    chip = f" :green-badge[✓ {decided}]" if decided else ""
-    cols[1].markdown(f"`{row['ALERT_ID']}`{override}{chip}  \n"
-                     f"{row.get('ALERT_TYPE', '?')} · {row.get('STATUS', '?')}")
-    cols[2].markdown(ui.tier_badge(row.get("URGENCY_TIER", "?")))
+    status_chip = f" {theme.chip(decided.capitalize(), 'green')}" if decided else ""
+    cols[1].markdown(f"`{row['ALERT_ID']}`{override}{status_chip}  \n"
+                     f"{row.get('ALERT_TYPE', '?')} · {row.get('STATUS', '?')}",
+                     unsafe_allow_html=True)
+    cols[2].markdown(ui.tier_badge(row.get("URGENCY_TIER", "?")), unsafe_allow_html=True)
     cols[3].write(f"{row.get('URGENCY_SCORE', 0):.1f}")
     cols[4].write(ui.sla_text(row.get("SLA_DUE_AT")))
-    cols[5].write(f"{row.get('COMPLEXITY_BAND', '?')} "
-                  f"({row.get('COMPLEXITY_POINTS', '?')})")
+    cols[5].markdown(f"{row.get('COMPLEXITY_BAND', '?')}",
+                     help=f"{row.get('COMPLEXITY_POINTS', '?')} points — full "
+                          "breakdown on the alert page")
     if cols[6].button("Open", key=f"open-{row['ALERT_ID']}"):
         st.session_state["alert_id"] = row["ALERT_ID"]
         st.switch_page("pages/1_Alert_Detail.py")
-
-st.caption("🔴 = hard override active (tier set by policy override; factor "
-           "breakdown preserved).")

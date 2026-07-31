@@ -104,6 +104,9 @@ class HanaRepository(Repository):
             password=password,
             encrypt=self.settings.hana_encrypt,
             sslValidateCertificate=False,
+            # hdbcli's default crypto provider hits "RTE:[1000013] Invalid
+            # flags specified" on some Windows TLS stacks; openssl avoids it.
+            sslCryptoProvider="openssl",
         )
         conn.setautocommit(True)
         return conn

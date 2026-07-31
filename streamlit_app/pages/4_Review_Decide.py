@@ -12,9 +12,10 @@ from pathlib import Path
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from components import api_client, ui  # noqa: E402
+from components import api_client, theme, ui  # noqa: E402
 
-st.set_page_config(page_title="Review & Decide", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="Review & Decide", layout="wide")
+theme.inject()
 
 DECISION_LABELS = {
     "Approve for escalation": "approve_for_escalation",
@@ -38,11 +39,12 @@ case = state["case"]
 workflow = state["workflow"]
 decisions = state["decisions"]
 
-st.page_link("pages/2_Case_File.py", label="← Case file")
-st.page_link("pages/3_Narrative.py", label="← Narrative")
+st.page_link("pages/2_Case_File.py", label="Case file", icon=ui.ICON_BACK)
+st.page_link("pages/3_Narrative.py", label="Narrative", icon=ui.ICON_BACK)
 st.title(f"Review & decide — {case_id}")
+ui.stepper(4)
 st.caption(f"Case status **{case['STATUS']}** · team {case.get('ASSIGNED_TEAM', '—')} · "
-           f"region {case.get('REGION', '—')} · backend `{state['backend']}`")
+           f"region {case.get('REGION', '—')}")
 
 # -- 1. draft review & edit -------------------------------------------------
 
@@ -58,12 +60,9 @@ if draft is None:
     st.warning("No narrative draft yet — generate one on the Narrative page first.")
     st.page_link("pages/3_Narrative.py", label="Go to Narrative →")
 else:
-    st.warning(ui.DRAFT_LABEL, icon="✍️")
+    st.warning(ui.DRAFT_LABEL, icon=ui.ICON_DRAFT)
     st.caption(f"Latest: **v{draft['DRAFT_VERSION']}** by "
-               f"**{draft['CREATED_BY_TYPE']}** · model "
-               f"`{draft.get('MODEL_VERSION', '—')}` · prompt "
-               f"`{draft.get('PROMPT_VERSION', '—')}` · "
-               f"{ui.fmt_ts(draft.get('CREATED_AT'))}")
+               f"**{draft['CREATED_BY_TYPE']}** · {ui.fmt_ts(draft.get('CREATED_AT'))}")
     edited = st.text_area("Investigator revision", value=draft["CONTENT"],
                           height=320, label_visibility="collapsed")
     if st.button("Save investigator revision"):
@@ -86,14 +85,15 @@ if workflow is None:
     if draft is None:
         st.caption("A draft is required before review can start.")
 else:
-    st.write(f"Workflow `{workflow['workflow_id']}` · status "
-             f"**{workflow['status']}** · started {ui.fmt_ts(workflow['started_at'])}"
-             + (f" · completed {ui.fmt_ts(workflow['completed_at'])}"
-                if workflow.get("completed_at") else ""))
+    st.markdown(f"Status **{workflow['status']}** · started "
+                f"{ui.fmt_ts(workflow['started_at'])}"
+                + (f" · completed {ui.fmt_ts(workflow['completed_at'])}"
+                   if workflow.get("completed_at") else ""))
+    st.caption(f"Workflow `{workflow['workflow_id']}`")
     if workflow.get("is_fallback"):
         st.warning("Local review-state machine (fallback) — not a live "
                    "SAP Build Process Automation instance. Honest label per "
-                   "CLAUDE.md §18.", icon="⚠️")
+                   "CLAUDE.md §18.", icon=ui.ICON_WARNING)
     else:
         st.success(f"Live SAP Build Process Automation instance "
                    f"`{workflow.get('external_instance_id')}` — the approval "
@@ -132,7 +132,7 @@ if submitted:
             st.error("Refused by the backend: **attestation is required** "
                      "before a decision is recorded. Tick the attestation "
                      "checkbox — a human must own this decision "
-                     "(CLAUDE.md §14).", icon="🚫")
+                     "(CLAUDE.md §14).", icon=ui.ICON_BLOCKED)
         elif exc.status == 422:
             st.error(f"Refused: {exc}")
         else:

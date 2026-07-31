@@ -8,9 +8,10 @@ from pathlib import Path
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from components import api_client, ui  # noqa: E402
+from components import api_client, theme, ui  # noqa: E402
 
-st.set_page_config(page_title="Case File", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="Case File", layout="wide")
+theme.inject()
 
 case_id = st.session_state.get("case_id") or st.query_params.get("case_id")
 if not case_id:
@@ -25,20 +26,21 @@ if not cf:
     st.page_link("pages/1_Alert_Detail.py", label="← Alert detail")
     st.stop()
 
-st.page_link("app.py", label="← Queue")
-st.page_link("pages/1_Alert_Detail.py", label="← Alert detail")
+st.page_link("app.py", label="Queue", icon=ui.ICON_BACK)
+st.page_link("pages/1_Alert_Detail.py", label="Alert detail", icon=ui.ICON_BACK)
 st.title(f"Case file — {case_id}")
-st.caption(f"Alert `{cf['alert_details']['alert_id']}` · schema "
-           f"`{cf['schema_version']}` · assembled {ui.fmt_ts(cf['assembled_at'])} · "
-           f"source coverage {cf['source_coverage']:.0%} · region "
-           f"{cf['region']} · backend `{state['backend']}`")
+ui.stepper(2)
+st.caption(f"Alert `{cf['alert_details']['alert_id']}` · assembled "
+           f"{ui.fmt_ts(cf['assembled_at'])} · source coverage "
+           f"{cf['source_coverage']:.0%} · region {cf['region']}")
 
 if cf["missing_information"]:
     with st.container(border=True):
-        st.markdown("**Missing information** (absent values are declared, never inferred)")
+        st.markdown(f":material/warning: **Missing information** "
+                    "(absent values are declared, never inferred)")
         for m in cf["missing_information"]:
             attempted = f" (attempted: {m['attempted_source']})" if m.get("attempted_source") else ""
-            st.write(f"⚠️ `{m['field']}` — {m['reason']}{attempted}")
+            st.write(f"`{m['field']}` — {m['reason']}{attempted}")
 
 tab_facts, tab_graph, tab_policy, tab_prov = st.tabs(
     ["Exact facts", "Relationship path", "Policy context", "Provenance & freshness"])
@@ -49,13 +51,14 @@ with tab_facts:
     st.markdown(f"{ui.tier_badge(pe['urgency_tier'])} score "
                 f"**{pe['urgency_score']:.1f}** · complexity "
                 f"{pe['complexity_band']} · policy `{pe['policy_version']}`"
-                + (f" · override 🔴 `{pe['hard_override_code']}`"
-                   if pe.get("hard_override_code") else ""))
+                + (f" · {theme.chip('Override', 'red')} `{pe['hard_override_code']}`"
+                   if pe.get("hard_override_code") else ""),
+                unsafe_allow_html=True)
 
     for adv in cf.get("predictive_advisories", []):
         st.info(f"{adv.get('label', ui.ADVISORY_LABEL)} — "
                 f"{adv['prediction_type']}: {float(adv['prediction_value']):.1f} "
-                f"(`{adv['model_name']} {adv['model_version']}`)", icon="🔬")
+                f"(`{adv['model_name']} {adv['model_version']}`)", icon=ui.ICON_ADVISORY)
 
     st.subheader("Customer profile")
     profile = cf.get("customer_profile")

@@ -91,9 +91,43 @@ else:
                    if workflow.get("completed_at") else ""))
     st.caption(f"Workflow `{workflow['workflow_id']}`")
     if workflow.get("is_fallback"):
-        st.warning("Local review-state machine (fallback) — not a live "
-                   "SAP Build Process Automation instance. Honest label per "
-                   "CLAUDE.md §18.", icon=ui.ICON_WARNING)
+        st.warning("SIMULATED review task — local state machine, not live "
+                   "SAP Build Process Automation (production surface: "
+                   "SAP Build My Inbox). Honest label per CLAUDE.md §18.",
+                   icon=ui.ICON_WARNING)
+        # Stage tracker mirroring the SBPA lifecycle
+        _stages = ["PENDING", "IN_REVIEW", "SENIOR_REVIEW",
+                   "APPROVED", "RETURNED", "INFO_REQUESTED"]
+        _current = workflow["status"]
+        _done = _current in ("APPROVED", "RETURNED", "INFO_REQUESTED")
+        st.markdown(" → ".join(
+            f"**:blue[{s}]**" if s == _current else s
+            for s in ("PENDING", "IN_REVIEW",
+                      _current if _done else "OUTCOME")), unsafe_allow_html=False)
+        # The simulated approval task, shaped like the SAP Build form:
+        # read-only case context + the two reviewer outcomes. The buttons
+        # drive the real local state machine via the same PATCH endpoint
+        # the SBPA callback would use — simulated surface, real transitions.
+        with st.container(border=True):
+            st.markdown(f"**Review task — TrustSphere review: {case_id}**")
+            ui.table([
+                {"Field": "case_id", "Value": case_id},
+                {"Field": "draft_id",
+                 "Value": draft["DRAFT_ID"] if draft else "—"},
+                {"Field": "evidence_summary",
+                 "Value": f"Case {case_id} (alert "
+                          f"{case.get('ALERT_ID')}) awaiting human review"},
+            ])
+            if not _done:
+                t1, t2, _sp = st.columns((2, 2, 3))
+                if t1.button("Approve for escalation", key="sim-task-approve"):
+                    api_client.transition_workflow(case_id, "APPROVED")
+                    st.rerun()
+                if t2.button("Return for edit", key="sim-task-return"):
+                    api_client.transition_workflow(case_id, "RETURNED")
+                    st.rerun()
+            else:
+                st.caption(f"Task resolved: {_current}")
     else:
         st.success(f"Live SAP Build Process Automation instance "
                    f"`{workflow.get('external_instance_id')}` — the approval "

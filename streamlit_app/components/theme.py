@@ -48,6 +48,25 @@ def chip(text: str, color: str = "gray") -> str:
             f'border-radius:0;letter-spacing:0.5px;">{text}</span>')
 
 
+def section_header(text: str, color: str = "blue",
+                   help_text: str | None = None) -> None:
+    """Section header as a pixel 'plate': Press Start 2P uppercase on a
+    solid SAP-colour block with the theme's chunky border + hard shadow.
+    Replaces st.subheader/st.header for section-level headings so hierarchy
+    reads by font voice + colour, not just size."""
+    bg = CHIP_COLORS.get(color, SAP_BLUE)
+    tip = f' title="{help_text}"' if help_text else ""
+    st.markdown(
+        f'<div style="margin:14px 0 10px 0;">'
+        f'<span{tip} style="display:inline-block;'
+        f"font-family:'Press Start 2P',monospace;font-size:12px;"
+        f'line-height:1.6;color:#FFFFFF;background:{bg};'
+        f'border:3px solid {SAP_NAVY};box-shadow:4px 4px 0 {SAP_NAVY};'
+        f'padding:7px 12px 5px 12px;letter-spacing:1px;'
+        f'text-transform:uppercase;">{text}</span></div>',
+        unsafe_allow_html=True)
+
+
 def inject() -> None:
     """Call once near the top of every page. Idempotent — safe to call on
     every rerun; Streamlit dedupes identical injected <style> blocks."""

@@ -39,7 +39,7 @@ ui.stepper(3)
 def render_generation(explanation: dict, heading: str) -> None:
     gen = explanation["generation"]
     val = explanation["validation"]
-    st.subheader(heading)
+    theme.section_header(heading)
     backend_note = ("SAP AI Core orchestration"
                     if gen["generation_backend"] == "sap_ai_core"
                     else "deterministic fallback (no model call)")
@@ -125,7 +125,7 @@ except api_client.ApiError as exc:
 
 if draft:
     st.divider()
-    st.subheader(f"Persisted draft v{draft['DRAFT_VERSION']}")
+    theme.section_header(f"Persisted draft v{draft['DRAFT_VERSION']}", "green")
     st.caption(f"Created by **{draft['CREATED_BY_TYPE']}** · "
                f"{ui.fmt_ts(draft.get('CREATED_AT'))} · status "
                f"{draft.get('VERIFICATION_STATUS', 'unverified')}")

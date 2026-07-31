@@ -48,7 +48,7 @@ st.caption(f"Case status **{case['STATUS']}** · team {case.get('ASSIGNED_TEAM',
 
 # -- 1. draft review & edit -------------------------------------------------
 
-st.header("1 · Review the narrative")
+theme.section_header("1 · Review the narrative")
 try:
     draft = api_client.latest_draft(case_id)["draft"]
 except api_client.ApiError as exc:
@@ -75,7 +75,7 @@ else:
 
 # -- 2. human review workflow -----------------------------------------------
 
-st.header("2 · Human review workflow")
+theme.section_header("2 · Human review workflow", "violet")
 if workflow is None:
     if st.button("Start human review", type="primary",
                  disabled=draft is None):
@@ -105,7 +105,7 @@ else:
 
 # -- 3. decision --------------------------------------------------------------
 
-st.header("3 · Decision (human only)")
+theme.section_header("3 · Decision (human only)", "gold")
 if decisions:
     st.caption("Decision history:")
     ui.table([{"When (SGT)": ui.fmt_ts(d["decided_at"]), "Decision": d["decision_type"],
@@ -147,5 +147,5 @@ if submitted:
 
 # -- 4. audit trail -----------------------------------------------------------
 
-st.header("4 · Audit trail (append-only)")
+theme.section_header("4 · Audit trail (append-only)", "gray")
 ui.audit_table(api_client.audit_events(case_id)["audit_events"])

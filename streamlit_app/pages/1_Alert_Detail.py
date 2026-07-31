@@ -43,9 +43,10 @@ if override:
 left, right = st.columns((3, 2))
 
 with left:
-    st.subheader(f"Regulatory urgency {score['urgency_score']:.1f} / 100",
-                help=f"Deterministic, versioned policy `{score['policy_version']}` · "
-                     f"calculated {ui.fmt_ts(score['calculated_at'])}")
+    theme.section_header(
+        f"Regulatory urgency {score['urgency_score']:.1f} / 100",
+        help_text=f"Deterministic, versioned policy {score['policy_version']} · "
+                  f"calculated {ui.fmt_ts(score['calculated_at'])}")
     charts.hbar_chart(
         [(f["factor_code"].replace("_", " ").title(), f["weighted_points"])
          for f in score["factors"]], color="blue", unit=" pts")
@@ -60,11 +61,11 @@ with left:
             st.caption("Caveats: " + " · ".join(score["caveats"]))
 
 with right:
-    st.subheader("SLA")
+    theme.section_header("SLA", "red")
     st.metric("Time remaining", ui.sla_text(alert.get("sla_due_at")),
               help=f"Due {ui.fmt_ts(alert.get('sla_due_at'))}")
 
-    st.subheader("Operational advisory")
+    theme.section_header("Operational advisory", "gold")
     if prediction is None:
         if st.button("Run advisory SLA prediction"):
             prediction = api_client.predict_sla(alert_id)["prediction"]
@@ -77,11 +78,11 @@ with right:
                   f"{float(pred.get('prediction_value', 0)):.1f}h",
                   help=f"Model `{pred.get('model_name')} {pred.get('model_version')}`")
 
-    st.subheader("Complexity", help="Operational effort estimate — not urgency")
+    theme.section_header("Complexity", "gray", "Operational effort estimate — not urgency")
     st.write(f"**{score['complexity_band']}** "
              f"(points {score['complexity_points']})")
 
-    st.subheader("Customer")
+    theme.section_header("Customer")
     st.write(f"Company `{alert.get('company_id') or '—'}` · "
              f"transaction `{alert.get('transaction_id') or '—'}`")
 

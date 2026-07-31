@@ -47,7 +47,7 @@ tab_facts, tab_graph, tab_policy, tab_prov = st.tabs(
 
 with tab_facts:
     pe = cf["priority_explanation"]
-    st.subheader("Priority")
+    theme.section_header("Priority")
     st.markdown(f"{ui.tier_badge(pe['urgency_tier'])} score "
                 f"**{pe['urgency_score']:.1f}** · complexity "
                 f"{pe['complexity_band']} · policy `{pe['policy_version']}`"
@@ -60,7 +60,7 @@ with tab_facts:
                 f"{adv['prediction_type']}: {float(adv['prediction_value']):.1f} "
                 f"(`{adv['model_name']} {adv['model_version']}`)", icon=ui.ICON_ADVISORY)
 
-    st.subheader("Customer profile")
+    theme.section_header("Customer profile")
     profile = cf.get("customer_profile")
     if profile:
         ui.table([{"Field": k, "Value": "—" if v is None else str(v)}
@@ -68,7 +68,7 @@ with tab_facts:
     else:
         st.caption("No customer profile (see missing information).")
 
-    st.subheader("Counterparties")
+    theme.section_header("Counterparties")
     if cf["counterparty_profiles"]:
         ui.table([{"Counterparty": cp["counterparty_label"],
                    "Jurisdiction": cp.get("jurisdiction_country_id") or "—",
@@ -77,7 +77,7 @@ with tab_facts:
     else:
         st.caption("No counterparty profiles in this case file.")
 
-    st.subheader("Transaction timeline")
+    theme.section_header("Transaction timeline")
     if cf["transaction_timeline"]:
         ui.table(
             [{"Occurred (SGT)": ui.fmt_ts(t.get("occurred_at")),
@@ -95,7 +95,7 @@ with tab_facts:
     else:
         st.caption("No transactions in this case file.")
 
-    st.subheader("Related alerts")
+    theme.section_header("Related alerts")
     if cf["related_alerts"]:
         ui.table([{"Alert": r["alert_id"], "Type": r.get("alert_type") or "—",
                    "Status": r.get("status") or "—",
@@ -137,7 +137,7 @@ with tab_policy:
                    "(permission-filtered; excluded from urgency scoring).")
 
 with tab_prov:
-    st.subheader("Source provenance")
+    theme.section_header("Source provenance")
     ui.table(
         [{"Citation": c["citation_id"], "Type": c["source_type"],
           "Kind": c["evidence_kind"], "Source": c["source_id"],
@@ -145,7 +145,7 @@ with tab_prov:
           "Retrieved": ui.fmt_ts(c["retrieved_at"]), "Region": c["region"],
           "Scope": c["permission_scope"]}
          for c in cf["source_provenance"]])
-    st.subheader("Data freshness")
+    theme.section_header("Data freshness")
     ui.table(
         [{"Source": f["source_object"], "Retrieved (SGT)": ui.fmt_ts(f["retrieved_at"]),
           "Source updated": ui.fmt_ts(f.get("source_updated_at"))}

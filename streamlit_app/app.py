@@ -104,33 +104,26 @@ for r in full_queue:
 type_counts_sorted = sorted(type_counts.items(), key=lambda kv: -kv[1])[:8]
 
 
-def _glance_title(text: str, help_text: str | None = None) -> None:
-    tip = f" title='{help_text}'" if help_text else ""
-    st.markdown(
-        f"<div{tip} style=\"font-family:'VT323',monospace;font-size:24px;"
-        f"color:#F5F7FA;letter-spacing:.04em;margin:2px 0 6px 0;\">"
-        f"{text}</div>", unsafe_allow_html=True)
-
-
-st.subheader("Queue at a glance")
+theme.section_header("Queue at a glance")
 row1_l, row1_r = st.columns(2)
 with row1_l:
-    _glance_title("By tier")
+    theme.section_header("By tier", "blue")
     charts.hbar_chart(list(tier_counts.items()), color="blue")
 with row1_r:
-    _glance_title("By alert type")
+    theme.section_header("By alert type", "violet")
     charts.hbar_chart(type_counts_sorted, color="violet")
 row2_l, row2_r = st.columns(2)
 with row2_l:
-    _glance_title("By complexity")
+    theme.section_header("By complexity", "green")
     charts.hbar_chart(list(complexity_counts.items()), color="green")
 with row2_r:
-    _glance_title("Backlog age", "Time past each alert's SLA due date")
+    theme.section_header("Backlog age", "gold", "Time past each alert's SLA due date")
     charts.hbar_chart(list(age_buckets.items()), color="gold")
 
-st.subheader(f"Ranked alert queue — {total:,} open alerts",
-            help="Order: hard overrides → urgency tier → SLA remaining → "
-                 "score. Complexity is a tie-break only.")
+theme.section_header(f"Ranked alert queue — {total:,} open alerts",
+                     help_text="Order: hard overrides → urgency tier → "
+                               "SLA remaining → score. Complexity is a "
+                               "tie-break only.")
 nav_l, nav_mid, nav_r = st.columns((1, 4, 1))
 if nav_l.button("← Prev", disabled=page == 0):
     st.session_state["queue_page"] = page - 1

@@ -68,15 +68,14 @@ was actually built and verified. Proof lives in `docs/capability-matrix.md`
   orchestration v2 (`src/trustsphere/assistant/`), five bounded tools over
   the same API; refuses dismiss/file/block/decide; live-verified including
   the shared-state proof (agent-created draft visible in the cockpit).
-- **SBPA (B5) — hybrid**: process "TrustSphere Human Review" is **live in
-  the SAP Build lobby** (SCALE 2026 environment; API trigger, approval
-  form, My Inbox task executed by the user). The **API-trigger path is
-  blocked** — no service-management rights in the shared subaccount, and
-  api-key-only auth was tested to exhaustion (all variants 401). Backend
-  trigger + polling `/sync` code (`src/trustsphere/workflows/sbpa.py`) is
-  implemented, unit-tested, and dormant: setting `SBPA_SERVICE_KEY`
-  activates it (trigger URL + definitionId already configured in `.env`).
-  The cockpit keeps the honest local-fallback label meanwhile.
+- **SBPA (B5) — local fallback is the demo path** (updated 31 Jul):
+  the process "TrustSphere Human Review" was built, deployed, and executed
+  in the SAP Build lobby during development (My Inbox approval proven),
+  but **organisers ruled SAP Build out of team scope** — do not demo or
+  claim it. The workflow demo runs on the documented local review-state
+  machine (§18 fallback, honestly labelled). Backend trigger + `/sync`
+  code (`src/trustsphere/workflows/sbpa.py`) remains in the repo as
+  unit-tested target-state integration, dormant.
 - **Tests**: 77 passing (scoring, review flow incl. attestation refusal,
   generation validation, assistant loop guardrails, SBPA client).
 - Integration fixes applied to Track A code during HANA go-live (int→str

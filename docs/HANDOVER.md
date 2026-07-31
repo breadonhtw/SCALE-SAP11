@@ -40,16 +40,15 @@ SBPA wiring, `/review-workflows/sync`).
 2. **Dry run ×2** following `docs/demo-script.md` with a timer.
 3. Right before presenting: `python scripts/run_demo_checks.py` then
    `python scripts/reset_demo_state.py --yes`.
-4. *(Optional, 5-min unlock)* **SBPA service key**: Person A (or an
-   organiser with subaccount rights) creates a service key on the
-   `star-sap-build` instance (BTP cockpit → Instances → ⋯ → Create Service
-   Key), save JSON to `Desktop/SAP/team-11/sbpa_service_key.json`, add
-   `SBPA_SERVICE_KEY=<that path>` to `.env`, restart backend → the cockpit's
-   "Start human review" goes fully live (real instance id,
-   `is_fallback:false`, `/sync` pulls the My Inbox outcome). Brandon's user
-   was permission-blocked; api-key-only auth is proven insufficient (all
-   variants 401 — capability matrix has the trail). If no key: demo the
-   lobby-triggered flow per the runbook — it's honest and works.
+4. **Workflow demo path (updated 31 Jul ~12:20):** organisers ruled that
+   SAP Build is **not available for team use** — do NOT demo the SBPA lobby
+   process or My Inbox. The demo uses the cockpit's **local review-state
+   machine** (the documented §18 fallback, already the default): Start
+   human review → honest fallback label → attested decision completes the
+   workflow → audit trail. Say it as: "the human-review workflow runs on a
+   local state machine matching the SAP Build contract; the SBPA
+   integration code is built and tested, pending tenant access." The
+   dormant SBPA client stays in the repo as target-state evidence.
 
 ## Run it (any machine)
 
@@ -84,8 +83,9 @@ re-run. Full flow check: `python scripts/run_demo_checks.py`.
   never call it Joule (Joule Studio is unavailable in this tenant).
 - Predictive SLA output is **advisory/shadow mode**, local open-source
   model (PAL/APL not in tenant), never inside the urgency score.
-- SBPA: live in the lobby, human-triggered; **API trigger implemented but
-  awaiting a service key** — say it exactly like that.
+- Workflow: **local review-state machine fallback, clearly labelled** —
+  never claim live SAP Build Process Automation (organisers ruled it out of
+  team scope; the integration code exists as target-state only).
 - The prototype **never closes alerts** — it records attested hand-off
   decisions; closure is downstream case management.
 - The dataset's every open alert is already SLA-breached — that's the

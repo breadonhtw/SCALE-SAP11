@@ -103,20 +103,29 @@ for r in full_queue:
         age_buckets["2y+"] += 1
 type_counts_sorted = sorted(type_counts.items(), key=lambda kv: -kv[1])[:8]
 
+
+def _glance_title(text: str, help_text: str | None = None) -> None:
+    tip = f" title='{help_text}'" if help_text else ""
+    st.markdown(
+        f"<div{tip} style=\"font-family:'VT323',monospace;font-size:24px;"
+        f"color:#F5F7FA;letter-spacing:.04em;margin:2px 0 6px 0;\">"
+        f"{text}</div>", unsafe_allow_html=True)
+
+
 st.subheader("Queue at a glance")
 row1_l, row1_r = st.columns(2)
 with row1_l:
-    st.caption("By tier")
+    _glance_title("By tier")
     charts.hbar_chart(list(tier_counts.items()), color="blue")
 with row1_r:
-    st.caption("By alert type")
+    _glance_title("By alert type")
     charts.hbar_chart(type_counts_sorted, color="violet")
 row2_l, row2_r = st.columns(2)
 with row2_l:
-    st.caption("By complexity")
+    _glance_title("By complexity")
     charts.hbar_chart(list(complexity_counts.items()), color="green")
 with row2_r:
-    st.caption("Backlog age", help="Time past each alert's SLA due date")
+    _glance_title("Backlog age", "Time past each alert's SLA due date")
     charts.hbar_chart(list(age_buckets.items()), color="gold")
 
 st.subheader(f"Ranked alert queue — {total:,} open alerts",

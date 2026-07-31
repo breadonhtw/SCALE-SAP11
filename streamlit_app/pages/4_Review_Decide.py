@@ -93,7 +93,7 @@ else:
     if workflow.get("is_fallback"):
         st.warning("SIMULATED review task — local state machine, not live "
                    "SAP Build Process Automation (production surface: "
-                   "SAP Build My Inbox). Honest label per CLAUDE.md §18.",
+                   "SAP Build My Inbox). Disclosed prototype fallback.",
                    icon=ui.ICON_WARNING)
         # Stage tracker mirroring the SBPA lifecycle
         _stages = ["PENDING", "IN_REVIEW", "SENIOR_REVIEW",
@@ -110,14 +110,31 @@ else:
         # the SBPA callback would use — simulated surface, real transitions.
         with st.container(border=True):
             st.markdown(f"**Review task — TrustSphere review: {case_id}**")
+            # What the reviewer actually reviews lives in the cockpit; the
+            # task carries a real evidence summary + deep links (same
+            # pattern as an SBPA My Inbox task linking into the app).
+            _alert = api_client.alert_detail(case["ALERT_ID"])
+            _a, _s = _alert["alert"], _alert.get("priority_score") or {}
+            _summary = (
+                f"{_a.get('alert_type', '?')} alert on company "
+                f"{_a.get('company_id', '?')} — urgency "
+                f"{_s.get('urgency_score', '?')} ({_s.get('urgency_tier', '?')}"
+                + (f", override {_s['hard_override']['code']}"
+                   if _s.get("hard_override") else "") + "). "
+                + (f"Narrative draft v{draft['DRAFT_VERSION']} by "
+                   f"{draft['CREATED_BY_TYPE']} attached."
+                   if draft else "No draft attached."))
             ui.table([
                 {"Field": "case_id", "Value": case_id},
                 {"Field": "draft_id",
                  "Value": draft["DRAFT_ID"] if draft else "—"},
-                {"Field": "evidence_summary",
-                 "Value": f"Case {case_id} (alert "
-                          f"{case.get('ALERT_ID')}) awaiting human review"},
+                {"Field": "evidence_summary", "Value": _summary},
             ])
+            lnk1, lnk2, _lsp = st.columns((2, 2, 3))
+            if lnk1.button("Review case file →", key="sim-task-casefile"):
+                st.switch_page("pages/2_Case_File.py")
+            if lnk2.button("Review narrative →", key="sim-task-narrative"):
+                st.switch_page("pages/3_Narrative.py")
             if not _done:
                 t1, t2, _sp = st.columns((2, 2, 3))
                 if t1.button("Approve for escalation", key="sim-task-approve"):
@@ -165,8 +182,8 @@ if submitted:
         if exc.code == "ATTESTATION_REQUIRED":
             st.error("Refused by the backend: **attestation is required** "
                      "before a decision is recorded. Tick the attestation "
-                     "checkbox — a human must own this decision "
-                     "(CLAUDE.md §14).", icon=ui.ICON_BLOCKED)
+                     "checkbox — a human must own this decision.",
+                     icon=ui.ICON_BLOCKED)
         elif exc.status == 422:
             st.error(f"Refused: {exc}")
         else:

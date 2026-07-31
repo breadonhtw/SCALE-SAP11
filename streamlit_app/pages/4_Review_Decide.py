@@ -15,7 +15,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from components import api_client, ui  # noqa: E402
 
 st.set_page_config(page_title="Review & Decide", page_icon="🛡️", layout="wide")
-ui.page_chrome()
 
 DECISION_LABELS = {
     "Approve for escalation": "approve_for_escalation",

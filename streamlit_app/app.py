@@ -16,7 +16,6 @@ from components import api_client, ui  # noqa: E402
 
 st.set_page_config(page_title="TrustSphere RiskOps Copilot",
                    page_icon="🛡️", layout="wide")
-ui.page_chrome()
 
 st.title("TrustSphere RiskOps Copilot")
 st.caption("Rules determine regulatory urgency. Predictive AI forecasts operational "

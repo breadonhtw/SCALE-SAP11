@@ -11,7 +11,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from components import api_client, ui  # noqa: E402
 
 st.set_page_config(page_title="Alert Detail", page_icon="🛡️", layout="wide")
-ui.page_chrome()
 
 alert_id = st.session_state.get("alert_id") or st.query_params.get("alert_id")
 if not alert_id:

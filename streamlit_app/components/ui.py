@@ -39,45 +39,6 @@ TIER_BADGE = {
 ADVISORY_LABEL = "Advisory — pilot/shadow mode. Not part of the regulatory urgency score."
 DRAFT_LABEL = "AI-generated draft — investigator verification required. Not approved for filing."
 
-# Design tokens from the team's Claude Design mockup (TrustSphere Cockpit.dc.html)
-_CHROME_CSS = """
-<style>
-@font-face{font-family:'72';src:url('https://cdn.jsdelivr.net/npm/@sap-theming/theming-base-content/content/Base/baseLib/baseTheme/fonts/72-Regular.woff2') format('woff2');font-weight:400;font-display:swap;}
-@font-face{font-family:'72';src:url('https://cdn.jsdelivr.net/npm/@sap-theming/theming-base-content/content/Base/baseLib/baseTheme/fonts/72-Semibold.woff2') format('woff2');font-weight:600;font-display:swap;}
-@font-face{font-family:'72';src:url('https://cdn.jsdelivr.net/npm/@sap-theming/theming-base-content/content/Base/baseLib/baseTheme/fonts/72-Bold.woff2') format('woff2');font-weight:700;font-display:swap;}
-html, body, [data-testid="stAppViewContainer"] *{font-family:'72',-apple-system,'Segoe UI',sans-serif;}
-code, pre, kbd{font-family:'IBM Plex Mono',ui-monospace,monospace !important;}
-[data-testid="stSidebar"]{background:#0C1116;border-right:1px solid #1F2933;}
-[data-testid="stMetric"]{background:#161D25;border:1px solid #1F2933;border-radius:10px;padding:14px 16px;}
-[data-testid="stMetricLabel"]{color:#93A1B0;text-transform:uppercase;letter-spacing:.06em;font-size:.72rem;}
-h1, h2, h3{letter-spacing:-.01em;}
-</style>
-"""
-
-_SIDEBAR_BRAND = """
-<div style="padding:4px 2px 10px 2px;">
-  <div style="font-weight:700;font-size:1.05rem;letter-spacing:.12em;color:#E6ECF2;">TRUSTSPHERE</div>
-  <div style="color:#4DB1FF;font-size:.85rem;font-weight:600;">RiskOps Copilot</div>
-  <div style="color:#5C6B7A;font-size:.72rem;margin-top:2px;">SAP BTP · Singapore (APAC)</div>
-</div>
-<div style="border-top:1px solid #1F2933;margin:6px 0 10px 0;"></div>
-<div style="font-size:.68rem;letter-spacing:.08em;color:#93A1B0;line-height:1.9;">
-  <span style="color:#6FB4E8;">RULES</span> →
-  <span style="color:#A88FE0;">PREDICTIVE</span> →
-  <span style="color:#63C591;">RETRIEVAL</span> →
-  <span style="color:#E8A268;">GENERATIVE</span> →
-  <span style="color:#E6ECF2;font-weight:600;">HUMANS&nbsp;DECIDE</span>
-</div>
-"""
-
-
-def page_chrome() -> None:
-    """Shared design-skin chrome (fonts, tiles, sidebar brand). Call once per
-    page, right after st.set_page_config."""
-    st.markdown(_CHROME_CSS, unsafe_allow_html=True)
-    with st.sidebar:
-        st.markdown(_SIDEBAR_BRAND, unsafe_allow_html=True)
-
 
 def tier_badge(tier: str) -> str:
     return TIER_BADGE.get(tier, tier)

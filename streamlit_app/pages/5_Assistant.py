@@ -47,6 +47,23 @@ if "assistant_api_messages" not in st.session_state:
     st.session_state["assistant_api_messages"] = []
     st.session_state["assistant_display"] = []
 
+# First-run onboarding (Google PAIR formula; MS first-run: capabilities +
+# output-quality expectations). Shown only while the conversation is empty.
+if not st.session_state["assistant_display"]:
+    with st.container(border=True):
+        st.markdown(
+            "**What this agent does:** explains why an alert is prioritised, "
+            "assembles the evidence case file, drafts cited narratives, and "
+            "routes cases to human review.\n\n"
+            "**What it can't do:** dismiss, close, file, block, or decide — "
+            "those actions don't exist in its tools; they happen on the "
+            "Review & Decide page, by you, with attestation.\n\n"
+            "**What to expect:** every factual answer is grounded in tool "
+            "results with citation ids you can verify; it does not learn "
+            "from your actions.\n\n"
+            "**You help by** asking about specific alerts or cases and "
+            "verifying citations before relying on a draft.")
+
 alert_id = st.session_state.get("alert_id")
 suggestion = None
 cols = st.columns((3, 2))
@@ -74,7 +91,10 @@ if prompt:
     with st.chat_message("user"):
         st.markdown(prompt)
     with st.chat_message("assistant"):
-        with st.spinner("Reasoning over tools (live orchestration calls)…"):
+        # Neutral process language (MS human-centered agents: "process/
+        # analyze", never "think/reason/understand").
+        with st.spinner("Running tools against the case APIs "
+                        "(live orchestration calls)…"):
             turn = _loop().run(st.session_state["assistant_api_messages"],
                                prompt)
         st.markdown(turn.text)

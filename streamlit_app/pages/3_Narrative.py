@@ -60,32 +60,56 @@ def render_generation(explanation: dict, heading: str) -> None:
 with st.container(border=True):
     st.warning(ui.DRAFT_LABEL, icon="✍️")
 
+def _run_generation(kind: str, question: str | None = None) -> None:
+    """Latency as a described process, not a generic spinner (Apple HIG:
+    say what the system is doing), completing with the actual outcome."""
+    with st.status(f"Sending case evidence to SAP AI Core orchestration "
+                   f"(gpt-4.1-mini, content filtering active)…",
+                   expanded=False) as status:
+        if kind == "explanation":
+            resp = api_client.explain(case_id, question)
+        else:
+            resp = api_client.generate_narrative(case_id)
+        payload = resp["explanation"]
+        val = payload["validation"]
+        status.update(
+            label=(f"Generated and validated — citation coverage "
+                   f"{val['citation_coverage']:.0%}, "
+                   f"{val['numeric_mismatches']} numeric mismatches"),
+            state="complete")
+    st.session_state[kind] = {"case_id": case_id, "payload": payload}
+
+
 col_a, col_b = st.columns(2)
 with col_a:
     question = st.text_input("Question for the explanation",
                              "Why is this alert prioritised?")
     if st.button("Generate explanation", type="primary"):
-        with st.spinner("Generating cited explanation (live model call)…"):
-            resp = api_client.explain(case_id, question)
-        st.session_state["explanation"] = {"case_id": case_id,
-                                            "payload": resp["explanation"]}
+        _run_generation("explanation", question)
 with col_b:
     st.write("")
     st.write("")
     if st.button("Generate narrative draft", type="primary"):
-        with st.spinner("Generating supporting narrative (live model call)…"):
-            resp = api_client.generate_narrative(case_id)
-        st.session_state["narrative"] = {"case_id": case_id,
-                                          "payload": resp["explanation"]}
+        _run_generation("narrative")
 
 exp = st.session_state.get("explanation")
 if exp and exp["case_id"] == case_id:
     render_generation(exp["payload"], "Explanation")
+    if st.button("↻ Regenerate explanation",
+                 help="Runs the same cited-generation call again; "
+                      "nothing is overwritten"):
+        _run_generation("explanation", question)
+        st.rerun()
 
 nar = st.session_state.get("narrative")
 if nar and nar["case_id"] == case_id:
     st.divider()
     render_generation(nar["payload"], "Narrative (cited sentences)")
+    if st.button("↻ Regenerate narrative",
+                 help="Produces a fresh draft as a new version; earlier "
+                      "versions are retained"):
+        _run_generation("narrative")
+        st.rerun()
 
 try:
     draft = api_client.latest_draft(case_id)["draft"]

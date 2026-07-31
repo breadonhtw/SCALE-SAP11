@@ -46,6 +46,21 @@ if total == 0:
     st.stop()
 
 pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
+
+# Hero KPI strip (team-level only — no individual metrics). Non-zero-only
+# rendering per NN/g salience-by-removal; oldest breach from rank #1, which
+# the queue policy guarantees is the longest-breached alert.
+rank1 = api_client.queue(limit=1, offset=0)["queue"][0] if page else \
+    (data["queue"][0] if data["queue"] else None)
+decided_on_page = sum(1 for r in data["queue"] if r.get("CASE_STATUS"))
+tiles = st.columns(3)
+tiles[0].metric("Open alerts", f"{total:,}")
+if rank1:
+    tiles[1].metric("Oldest SLA breach", ui.sla_text(rank1.get("SLA_DUE_AT"))
+                    .replace("BREACHED ", "").replace(" ago", ""))
+if decided_on_page:
+    tiles[2].metric("Decided on this page", decided_on_page)
+
 st.subheader(f"Ranked alert queue — {total:,} open alerts")
 nav_l, nav_mid, nav_r = st.columns((1, 4, 1))
 if nav_l.button("← Prev", disabled=page == 0):
@@ -71,7 +86,8 @@ DECIDED_STATUSES = {"ESCALATED": "escalated", "RETURNED_FOR_EDIT": "returned",
 for rank, row in enumerate(data["queue"], start=page * PAGE_SIZE + 1):
     cols = st.columns((1, 6, 3, 2, 4, 3, 2))
     cols[0].write(rank)
-    override = " 🔴" if row.get("HARD_OVERRIDE_CODE") else ""
+    # Status encodings: colour + text + shape (IBM Carbon: never colour alone)
+    override = " :red-badge[🔴 override]" if row.get("HARD_OVERRIDE_CODE") else ""
     decided = DECIDED_STATUSES.get(row.get("CASE_STATUS") or "")
     chip = f" :green-badge[✓ {decided}]" if decided else ""
     cols[1].markdown(f"`{row['ALERT_ID']}`{override}{chip}  \n"

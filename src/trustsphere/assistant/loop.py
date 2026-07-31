@@ -115,7 +115,7 @@ class AssistantLoop:
 
         # Defensive: cap loop exited without a final text (shouldn't happen —
         # the last iteration runs without tools).
-        return AssistantTurn(text="I hit my reasoning limit for this question "
+        return AssistantTurn(text="Tool-call limit reached for this question "
                                    "— please narrow it down.",
                              tool_events=events, messages=messages,
                              total_tokens=total_tokens, model_name=model_seen)

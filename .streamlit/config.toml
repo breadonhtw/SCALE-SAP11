@@ -1,0 +1,14 @@
+# TrustSphere cockpit theme — palette from the team's Claude Design mockup
+# ("Alert triage dashboard design" / TrustSphere Cockpit.dc.html)
+[theme]
+base = "dark"
+primaryColor = "#4DB1FF"
+backgroundColor = "#10151B"
+secondaryBackgroundColor = "#161D25"
+textColor = "#E6ECF2"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false

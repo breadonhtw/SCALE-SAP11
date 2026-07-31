@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from components import api_client, ui  # noqa: E402
 
 st.set_page_config(page_title="Case File", page_icon="🛡️", layout="wide")
+ui.page_chrome()
 
 case_id = st.session_state.get("case_id") or st.query_params.get("case_id")
 if not case_id:

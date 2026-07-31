@@ -21,6 +21,7 @@ from trustsphere.assistant import AssistantLoop  # noqa: E402
 
 st.set_page_config(page_title="Investigation Assistant", page_icon="🛡️",
                    layout="wide")
+ui.page_chrome()
 
 st.title("Investigation Assistant")
 st.caption("**TrustSphere Financial Crime Investigation Agent — custom agent "

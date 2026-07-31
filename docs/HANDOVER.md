@@ -1,7 +1,6 @@
 # Team handover — 2026-07-31 (presentation day)
 
-Brandon (Track B) is unwell and may miss the presentation. This doc is the
-complete state of the technical build + what remains today. Everything below
+This doc is the complete state of the technical build + what remains today. Everything below
 is on `main` (pushed) and verified by `scripts/run_demo_checks.py`
 (**ALL CHECKS PASSED** on live HANA, 2026-07-31 early morning).
 
@@ -36,18 +35,12 @@ SBPA wiring, `/review-workflows/sync`).
 
 ## What needs to happen TODAY
 
-1. **Submission email — BEFORE 2:30 PM** to john.gao01@sap.com, identify as
-   team 11: slide deck (business owner), codebase (GitHub link
-   https://github.com/breadonhtw/SCALE-SAP11 or zip of `main`), artifacts:
-   `sap/orchestration/trustsphere-narrative-config.json` (team-authored
-   orchestration config), screenshots (My Inbox approval task, AI Launchpad
-   model selection). **This is the hard deadline.**
-2. **Set up the demo machine** (15 min — see "Run it" below). Everything
+1. **Set up the demo machine** (15 min — see "Run it" below). Everything
    state-ful lives in HANA, so any laptop with the team credentials works.
-3. **Dry run ×2** following `docs/demo-script.md` with a timer.
-4. Right before presenting: `python scripts/run_demo_checks.py` then
+2. **Dry run ×2** following `docs/demo-script.md` with a timer.
+3. Right before presenting: `python scripts/run_demo_checks.py` then
    `python scripts/reset_demo_state.py --yes`.
-5. *(Optional, 5-min unlock)* **SBPA service key**: Person A (or an
+4. *(Optional, 5-min unlock)* **SBPA service key**: Person A (or an
    organiser with subaccount rights) creates a service key on the
    `star-sap-build` instance (BTP cockpit → Instances → ⋯ → Create Service
    Key), save JSON to `Desktop/SAP/team-11/sbpa_service_key.json`, add
@@ -97,5 +90,3 @@ re-run. Full flow check: `python scripts/run_demo_checks.py`.
   decisions; closure is downstream case management.
 - The dataset's every open alert is already SLA-breached — that's the
   case-study aged backlog, narrate it as such.
-
-Brandon is reachable async in the team chat. Get the deck in before 2:30.
